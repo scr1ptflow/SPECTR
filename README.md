@@ -19,6 +19,7 @@ SPECTR is built with a focus on clarity, immersion, and extensibility. The goal 
 This project is currently in active development and may change frequently. Expect rough edges, experimental features, and occasional instability.
 
 🎛️ Tech Stack
+
 This is intended to be full python
 
 🤖 Vibe Coded™
