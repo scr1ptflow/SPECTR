@@ -4,23 +4,26 @@ SPECTR is a lightweight overlay tool designed primarily for Elite Dangerous, pro
 
 It aims to enhance situational awareness by displaying contextual data in a clean, non-intrusive command-terminal style interface.
 
+
 ✨ Features
 In-game overlay for Elite Dangerous
 Real-time environmental and system information
 Minimal performance overhead
 Modular design for future expansion
 Customizable display elements (WIP)
-🧠 Philosophy
 
+
+🧠 Philosophy
 SPECTR is built with a focus on clarity, immersion, and extensibility. The goal is to provide useful information without breaking the feel of the cockpit experience.
 
-⚠️ Status
 
+⚠️ Status
 This project is currently in active development and may change frequently. Expect rough edges, experimental features, and occasional instability.
 
-🎛️ Tech Stack
 
+🎛️ Tech Stack
 This is intended to be full python
+
 
 🤖 Vibe Coded™
 Yes — this project is vibe coded.
