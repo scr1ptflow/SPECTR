@@ -23,8 +23,8 @@ class JumpTracker(Plugin):
         self.pcfg = config.plugin_config(self.name)
 
         win_w = self.pcfg.get("window_width", 400)
-        win_h = self.pcfg.get("window_height", 80)
-        win_pos = self.pcfg.get("window_position", "center-top")
+        win_h = self.pcfg.get("window_height", 120)
+        win_pos = self.pcfg.get("window_position", "top")
 
         self.win = overlay.create_plugin_window(
             self.name, position=win_pos, width=win_w, height=win_h
@@ -33,7 +33,7 @@ class JumpTracker(Plugin):
 
         font = (
             config.get("overlay", "font_family", default="Consolas"),
-            config.get("overlay", "font_size", default=11),
+            self.overlay._scaled_font_size,
         )
         bg = config.get("overlay", "bg_color", default="#0a0f08")
         accent = config.get("overlay", "accent_color", default="#6B8E23")
@@ -58,7 +58,7 @@ class JumpTracker(Plugin):
         self.route_line.pack(fill=tk.X, pady=0)
 
         # === Route bar ===
-        self.route_bar = RouteView(parent, bg=bg)
+        self.route_bar = RouteView(parent, bg=bg, scale_factor=self.overlay._scale_factor)
         self.route_bar.pack(fill=tk.X, pady=(0, 2))
 
         # === Warnings (neutron / refuel / fuel) ===
@@ -77,6 +77,7 @@ class JumpTracker(Plugin):
         self._restore_state_from_journal()
 
         self._read_navroute()
+        parent.update_idletasks()
         self._update_display()
         self._navroute_polling = True
         self._poll_navroute()
@@ -219,6 +220,7 @@ class JumpTracker(Plugin):
         elif event == "journal:NavRouteClear":
             self.route = []
             self.route_idx = -1
+            self._navroute_mtime = 0
 
         elif event == "journal:StartJump":
             if data.get("JumpType") == "Hyperspace":
@@ -227,35 +229,35 @@ class JumpTracker(Plugin):
         self._update_display()
 
     def _effective_route(self):
-        if self.route and len(self.route) >= 2:
+        if self.route and len(self.route) >= 1:
             return self.route
-        if self._follow.active and len(self._follow.hops) >= 2:
+        if self._follow.active and len(self._follow.hops) >= 1:
             return self._follow.hops
         return []
 
     def _effective_idx(self):
-        if self.route and len(self.route) >= 2:
+        if self.route and len(self.route) >= 1:
             return self.route_idx
         if self._follow.active:
             return self._follow.last_idx
         return -1
 
     def _effective_next(self):
-        if self.route and len(self.route) >= 2:
+        if self.route and len(self.route) >= 1:
             return self._route_next()
         if self._follow.active:
             return self._follow.next_hop()
         return None
 
     def _effective_remaining(self):
-        if self.route and len(self.route) >= 2:
+        if self.route and len(self.route) >= 1:
             return self._route_remaining()
         if self._follow.active:
             return self._follow.remaining()
         return 0
 
     def _effective_dest(self):
-        if self.route and len(self.route) >= 2:
+        if self.route and len(self.route) >= 1:
             return self.route[-1]
         if self._follow.active and self._follow.hops:
             return self._follow.hops[-1]
@@ -290,7 +292,7 @@ class JumpTracker(Plugin):
         idx = self._effective_idx()
         nxt = self._effective_next()
         dest = self._effective_dest()
-        has_route = bool(route and len(route) >= 2)
+        has_route = bool(route and len(route) >= 1)
         charging = self.fsd_charging
 
         if has_route:
@@ -310,8 +312,8 @@ class JumpTracker(Plugin):
                 self.route_line.config(
                     text=f"Dest: {dest_name}  |  {nxt_text}  {pos_str} of {total_count}{dist_str}"
                 )
-            self.route_bar.set_route(route, idx, total_dist=dist)
             self.route_bar.pack(fill=tk.X, pady=(0, 2))
+            self.route_bar.set_route(route, idx, total_dist=dist)
         else:
             if charging:
                 self.route_line.config(text="Jumping...", fg="#ffaa00")
@@ -332,3 +334,11 @@ class JumpTracker(Plugin):
                 elif wtype == "fuel":
                     warn_parts.append("* Fuel check")
         self.warn_label.config(text="  ".join(warn_parts) if warn_parts else "")
+
+        # Dynamic visibility
+        dynamic = self.pcfg.get("dynamic", False)
+        if dynamic:
+            self.win.attributes("-alpha", 1.0 if has_route else 0.0)
+        else:
+            self.win.attributes("-alpha", 1.0)
+        self.overlay.resize_plugin(self.name)

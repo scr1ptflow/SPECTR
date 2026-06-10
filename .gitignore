@@ -4,3 +4,7 @@ __pycache__/
 *.log
 build/
 dist/
+config.json
+SPECTR.zip
+BUILD.md
+AGENTS.md

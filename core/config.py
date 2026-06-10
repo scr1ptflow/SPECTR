@@ -10,11 +10,11 @@ DEFAULT_CONFIG = {
         "position": "top-right",
         "width": 320,
         "height": 600,
-        "offset_x": 10,
-        "offset_y": 10,
+        "offset_x": 0,
+        "offset_y": 0,
         "font_family": "Consolas",
         "font_size": 11,
-        "bg_color": "#0d0d1a",
+        "bg_color": "#010101",
         "fg_color": "#e0e0e0",
         "accent_color": "#00d4aa",
         "hide_on_unfocus": True
@@ -33,7 +33,11 @@ DEFAULT_CONFIG = {
 class Config:
     def __init__(self, path=None):
         if path is None:
-            path = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), "config.json")
+            if getattr(sys, 'frozen', False):
+                base_path = os.path.dirname(os.path.abspath(sys.executable))
+            else:
+                base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+            path = os.path.join(base_path, "config.json")
         self.path = os.path.abspath(path)
         self.data = copy.deepcopy(DEFAULT_CONFIG)
         self._load()
@@ -46,6 +50,8 @@ class Config:
                 self._merge(self.data, user_config)
             except (json.JSONDecodeError, OSError) as e:
                 print(f"Warning: Could not load config: {e}")
+        else:
+            self.save()
 
     def _merge(self, base, override):
         for key, value in override.items():

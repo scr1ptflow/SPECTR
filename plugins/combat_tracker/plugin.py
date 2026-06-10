@@ -2,6 +2,7 @@ import json
 import os
 import tkinter as tk
 from core.plugin_base import Plugin
+from core.journal import default_journal_path
 from core.status import HARDPOINTS, IN_DANGER, BEING_INTERDICTED
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -19,8 +20,10 @@ class CombatTracker(Plugin):
         self.event_bus = event_bus
         self.game = game
         self._handler = self.on_event
+        self.pcfg = config.plugin_config(self.name)
+        win_pos = self.pcfg.get("window_position", "top-right")
         self.win = overlay.create_plugin_window(
-            self.name, position="bottom-center", width=250, height=150
+            self.name, position=win_pos, width=250, height=150
         )
         parent = self.win.container
         self.win.attributes("-alpha", 1.0)
@@ -28,7 +31,7 @@ class CombatTracker(Plugin):
 
         font = (
             config.get("overlay", "font_family", default="Consolas"),
-            config.get("overlay", "font_size", default=11),
+            self.overlay._scaled_font_size,
         )
         bg = config.get("overlay", "bg_color", default="#0a0f08")
         accent = config.get("overlay", "accent_color", default="#6B8E23")
@@ -78,6 +81,25 @@ class CombatTracker(Plugin):
         self.bonds_total = 0
         self._hardpoints_deployed = False
         self._load_stats()
+
+        # Read current Status.json for accurate initial state
+        journal_dir = default_journal_path(config.get("journal_path"))
+        try:
+            sp = os.path.join(journal_dir, "Status.json")
+            if os.path.isfile(sp):
+                with open(sp, encoding="utf-8") as f:
+                    sd = json.load(f)
+                flags = sd.get("Flags", 0)
+                self._hardpoints_deployed = bool(flags & HARDPOINTS)
+        except Exception:
+            pass
+
+        # Apply initial dynamic visibility
+        dynamic = self.pcfg.get("dynamic", False)
+        if dynamic:
+            in_combat = bool(self._hardpoints_deployed)
+            self._in_combat = in_combat
+            self.win.attributes("-alpha", 1.0 if in_combat else 0.0)
 
         event_bus.subscribe("status", self._handler)
         event_bus.subscribe("journal:Bounty", self._handler)
@@ -132,9 +154,14 @@ class CombatTracker(Plugin):
             flags = data.get("Flags", data.get("flags", 0))
             self._hardpoints_deployed = bool(flags & HARDPOINTS)
             in_combat = bool(flags & _IN_COMBAT_FLAGS)
-            if in_combat != self._in_combat:
+            dynamic = self.pcfg.get("dynamic", False)
+            if dynamic:
+                if in_combat != self._in_combat:
+                    self._in_combat = in_combat
+                    self.win.attributes("-alpha", 1.0 if in_combat else 0.0)
+            else:
                 self._in_combat = in_combat
-                self.win.attributes("-alpha", 1.0 if in_combat else 0.0)
+                self.win.attributes("-alpha", 1.0)
             self._update_display()
         elif event == "journal:Bounty":
             self.kills += 1

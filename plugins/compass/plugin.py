@@ -16,19 +16,22 @@ class GroundTarget(Plugin):
         self._handler = self.on_event
 
         self.overlay = overlay
+        self.pcfg = config.plugin_config(self.name)
+        win_pos = self.pcfg.get("window_position", "top")
         self.win = overlay.create_plugin_window(
-            self.name, position="center-top", width=280, height=150,
+            self.name, position=win_pos, width=400, height=150,
         )
         parent = self.win.container
 
         self.font = (
             config.get("overlay", "font_family", default="Consolas"),
-            config.get("overlay", "font_size", default=11),
+            self.overlay._scaled_font_size,
         )
-        self.font_small = (self.font[0], self.font[1] - 1)
+        self.font_small = (self.font[0], max(self.font[1] - 1, 8))
         self._bg = config.get("overlay", "bg_color", default="#0a0f08")
         self._accent = config.get("overlay", "accent_color", default="#00d4aa")
         self._fg = config.get("overlay", "fg_color", default="#e0e0e0")
+        sf = self.overlay._scale_factor
         bg = self._bg
         fg = self._fg
 
@@ -37,13 +40,6 @@ class GroundTarget(Plugin):
         self.target_name = ""
         self._last_bearing = None
         self._last_show_target = False
-
-        self.header = tk.Label(
-            parent, text="Compass",
-            font=(self.font[0], self.font[1]),
-            bg=bg, fg=self._accent, anchor=tk.W,
-        )
-        self.header.pack(fill=tk.X, pady=(0, 2))
 
         self.info_label = tk.Label(
             parent, text="", font=self.font_small, bg=bg, fg=fg, anchor=tk.W,
@@ -57,8 +53,8 @@ class GroundTarget(Plugin):
             parent, text="", font=self.font, bg=bg, fg=fg, anchor=tk.CENTER,
         )
 
-        self.compass_w = 260
-        self.compass_h = 55
+        self.compass_w = max(80, round(260 * sf))
+        self.compass_h = max(20, round(55 * sf))
         self.canvas = tk.Canvas(
             parent, width=self.compass_w, height=self.compass_h, bg=bg,
             highlightthickness=0, bd=0,
@@ -206,23 +202,26 @@ class GroundTarget(Plugin):
                 self._visible = False
                 self.win.attributes("-alpha", 0.0)
 
+        self.overlay.resize_plugin(self.name)
+
     def _draw_compass(self, heading, has_target=False, bearing=None):
         c = self.canvas
         c.delete("all")
         w = self.compass_w
         h = self.compass_h
         bg = self._bg
+        sf = self.overlay._scale_factor
 
         c.create_rectangle(0, 0, w, h, fill=bg, outline="")
 
-        view_width = 180
+        view_width = max(60, round(180 * sf))
         ppd = w / view_width
-        tick_top = 6
-        tick_bot = h - 6
+        tick_top = max(2, round(6 * sf))
+        tick_bot = h - max(2, round(6 * sf))
 
         if heading is None:
             c.create_text(w / 2, h // 2, text="--", fill="#888888",
-                          font=("Consolas", 10), anchor=tk.CENTER)
+                          font=("Consolas", max(6, round(10 * sf))), anchor=tk.CENTER)
             return
 
         start_deg = int((heading - view_width / 2) // 10) * 10
@@ -234,16 +233,16 @@ class GroundTarget(Plugin):
             if x < 0 or x > w:
                 continue
             if deg % 30 == 0:
-                c.create_line(x, tick_top, x, tick_bot, fill="#555555", width=1)
-                c.create_text(x, h - 2, text=f"{deg % 360:03d}", fill="#888888",
-                              font=("Consolas", 7), anchor=tk.S)
+                c.create_line(x, tick_top, x, tick_bot, fill="#555555", width=max(1, round(sf)))
+                c.create_text(x, h - max(1, round(2 * sf)), text=f"{deg % 360:03d}", fill="#888888",
+                              font=("Consolas", max(5, round(7 * sf))), anchor=tk.S)
             else:
-                c.create_line(x, tick_top + 6, x, tick_bot - 6, fill="#444444", width=1)
+                c.create_line(x, tick_top + max(2, round(6 * sf)), x, tick_bot - max(2, round(6 * sf)), fill="#444444", width=max(1, round(sf)))
 
         cx = w / 2
-        c.create_line(cx, 0, cx, h, fill=self._accent, width=2)
+        c.create_line(cx, 0, cx, h, fill=self._accent, width=max(1, round(2 * sf)))
         c.create_text(cx, 0, text="\u25b2", fill=self._accent,
-                      font=("Consolas", 8), anchor=tk.N)
+                      font=("Consolas", max(5, round(8 * sf))), anchor=tk.N)
 
         if has_target and bearing is not None:
             rel = bearing - heading
@@ -254,5 +253,5 @@ class GroundTarget(Plugin):
             tx = w / 2 + rel * ppd
             if 0 <= tx <= w:
                 c.create_text(tx, 0, text="\u25bc", fill="#ff4444",
-                              font=("Consolas", 10), anchor=tk.N)
-                c.create_line(tx, 10, tx, h - 2, fill="#ff4444", width=1, dash=(3, 2))
+                              font=("Consolas", max(6, round(10 * sf))), anchor=tk.N)
+                c.create_line(tx, max(3, round(10 * sf)), tx, h - max(1, round(2 * sf)), fill="#ff4444", width=max(1, round(sf)), dash=(max(2, round(3 * sf)), max(1, round(2 * sf))))

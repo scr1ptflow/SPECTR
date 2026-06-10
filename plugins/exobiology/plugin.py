@@ -86,18 +86,20 @@ class ExobiologyTracker(Plugin):
         self.game = game
         self.status = status
         self._handler = self.on_event
+        self.pcfg = config.plugin_config(self.name)
+        sf = self.overlay._scale_factor
+        win_pos = self.pcfg.get("window_position", "center-left")
         self.win = overlay.create_plugin_window(
-            self.name, position="center-right", width=250, height=400
+            self.name, position=win_pos, width=240, height=250, max_height=250
         )
-        self.win._pl_ox = -5
+        self.win._pl_ox = round(-5 * sf)
         self.win.update_idletasks()
-        self.win.geometry(f"+{self.win.winfo_x() - 5}+{self.win.winfo_y()}")
         parent = self.win.container
         self.win.attributes("-alpha", 1.0)
 
         font = (
             config.get("overlay", "font_family", default="Consolas"),
-            10,
+            self.overlay._scaled_font_size,
         )
         bg = config.get("overlay", "bg_color", default="#0a0f08")
         fg = config.get("overlay", "fg_color", default="#9ACD32")
@@ -108,7 +110,7 @@ class ExobiologyTracker(Plugin):
         self.predictor = BioPredictor()
         self._known_genuses = set()
         self._update_pending = False
-        self._load_genus_images(icon_size=18)
+        self._load_genus_images(icon_size=max(8, round(18 * sf)))
 
         self.system_label = tk.Label(
             parent,
@@ -130,8 +132,9 @@ class ExobiologyTracker(Plugin):
             highlightthickness=0,
             borderwidth=0,
             state=tk.DISABLED,
+            height=2,
         )
-        self.display.pack(fill=tk.BOTH, expand=True)
+        self.display.pack(fill=tk.X)
         self.display.tag_config("bio_known", foreground="#00d4aa")
         self.display.tag_config("bio_new", foreground="#ff6b6b")
         self.display.tag_config("body_line", foreground=accent)
@@ -293,10 +296,15 @@ class ExobiologyTracker(Plugin):
         if event == "status":
             in_fss = self.status.is_in_fss() if self.status else False
             has_data = bool(self.bodies)
-            visible = in_fss or has_data
-            if visible != self._frame_shown:
-                self._frame_shown = visible
-                self.win.attributes("-alpha", 1.0 if visible else 0.0)
+            dynamic = self.pcfg.get("dynamic", False)
+            if dynamic:
+                visible = in_fss or has_data
+                if visible != self._frame_shown:
+                    self._frame_shown = visible
+                    self.win.attributes("-alpha", 1.0 if visible else 0.0)
+            else:
+                self._frame_shown = True
+                self.win.attributes("-alpha", 1.0)
             return
 
         if event == "journal:CodexEntry":
@@ -367,7 +375,8 @@ class ExobiologyTracker(Plugin):
 
         if not self.bodies:
             self.display.insert(tk.END, "Use FSS to discover signals")
-            self.display.config(state=tk.DISABLED)
+            self.display.config(state=tk.DISABLED, height=2)
+            self.overlay.resize_plugin(self.name)
             return
 
         total_value = 0
@@ -380,9 +389,8 @@ class ExobiologyTracker(Plugin):
                 continue
             lines_added = True
 
-            if " " in body:
-                p = body.split(" ")
-                body_short = " ".join(p[1:]) if p[0].lower() == self.current_system.lower() else body
+            if body.lower().startswith(self.current_system.lower()):
+                body_short = body[len(self.current_system):].strip()
             else:
                 body_short = body
             body_short = re.sub(r"(\d+) ([a-z])", lambda m: m.group(1) + m.group(2).upper(), body_short)
@@ -413,11 +421,19 @@ class ExobiologyTracker(Plugin):
         if total_value > 0:
             self.display.insert(tk.END, f"\nPotential value: {total_value:,} CR")
 
-        self.display.config(state=tk.DISABLED)
+        visual_lines = int(self.display.count("1.0", "end-1c", "displaylines")[0])
+        self.display.config(state=tk.DISABLED, height=visual_lines)
+
+        self.overlay.resize_plugin(self.name)
 
         has_data = bool(self.bodies)
         in_fss = self.status.is_in_fss() if self.status else False
-        visible = in_fss or has_data
-        if visible != self._frame_shown:
-            self._frame_shown = visible
-            self.win.attributes("-alpha", 1.0 if visible else 0.0)
+        dynamic = self.pcfg.get("dynamic", False)
+        if dynamic:
+            visible = in_fss or has_data
+            if visible != self._frame_shown:
+                self._frame_shown = visible
+                self.win.attributes("-alpha", 1.0 if visible else 0.0)
+        else:
+            self._frame_shown = True
+            self.win.attributes("-alpha", 1.0)

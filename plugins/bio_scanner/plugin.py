@@ -7,10 +7,6 @@ class BioScanner(Plugin):
     version = "1.0.0"
     description = "Shows bio samples with 3/3 scan gauge per species"
 
-    PIP_W = 22
-    PIP_H = 16
-    PIP_GAP = 5
-
     def on_load(self, overlay, event_bus, config, game=None, status=None):
         self.overlay = overlay
         self.event_bus = event_bus
@@ -18,23 +14,23 @@ class BioScanner(Plugin):
         self.status = status
         self._handler = self.on_event
 
-        compass_h = 150
-        gap = 7
+        self.pcfg = config.plugin_config(self.name)
+        sf = self.overlay._scale_factor
+        self.PIP_W = max(10, round(26 * sf))
+        self.PIP_H = max(10, round(26 * sf))
+        self.PIP_GAP = max(2, round(6 * sf))
+        win_pos = self.pcfg.get("window_position", "top")
         self.win = overlay.create_plugin_window(
-            self.name, position="center-top", width=280, height=60
+            self.name, position=win_pos, width=400, height=80
         )
-        self.win._pl_oy = compass_h + gap
         parent = self.win.container
         self.win.attributes("-alpha", 1.0)
 
         self.win.update_idletasks()
-        screen_w = self.win.winfo_screenwidth()
-        x = (screen_w - 280) // 2
-        self.win.geometry(f"280x60+{x}+{compass_h + gap}")
 
         font = (
             config.get("overlay", "font_family", default="Consolas"),
-            config.get("overlay", "font_size", default=11),
+            self.overlay._scaled_font_size,
         )
         bg = config.get("overlay", "bg_color", default="#0a0f08")
         self._accent = config.get("overlay", "accent_color", default="#00d4aa")
@@ -46,10 +42,12 @@ class BioScanner(Plugin):
         self._label.pack(fill=tk.X)
 
         self._canvas = tk.Canvas(
-            parent, width=260, height=22, bg=bg,
+            parent, height=max(16, round(32 * sf)), bg=bg,
             highlightthickness=0, bd=0,
         )
         self._canvas.pack(fill=tk.X)
+
+        self.win.update_idletasks()
 
         self.current_body = ""
         self._current = None
@@ -78,6 +76,7 @@ class BioScanner(Plugin):
             self._current = None
             self._label.config(text="-- No Target --")
             self._draw(0)
+            self.overlay.resize_plugin(self.name)
             return
 
         if event == "journal:ApproachBody":
@@ -107,22 +106,22 @@ class BioScanner(Plugin):
 
     def _draw(self, count):
         self._canvas.delete("all")
-        cw = 260
-        ch = 22
+        cw = self._canvas.winfo_width()
+        if cw < 10:
+            cw = self._canvas.master.winfo_width() - 20
+        if cw < 10:
+            cw = round(380 * self.overlay._scale_factor)
         total_w = 3 * self.PIP_W + 2 * self.PIP_GAP
         start_x = (cw - total_w) // 2
-        pip_y = (ch - self.PIP_H) // 2
+        sf = self.overlay._scale_factor
+        py = max(1, round(2 * sf))
+        lw = max(1, round(2 * sf))
 
         for i in range(3):
             x = start_x + i * (self.PIP_W + self.PIP_GAP)
-            fill = self._accent if i < count else "#2a2a2a"
+            fill = self._accent if i < count else "#444444"
+            outline = self._accent if i < count else "#777777"
             self._canvas.create_rectangle(
-                x, pip_y, x + self.PIP_W, pip_y + self.PIP_H,
-                fill=fill, outline="#555555", width=1,
+                x, py, x + self.PIP_W, py + self.PIP_H,
+                fill=fill, outline=outline, width=lw,
             )
-
-        self._canvas.create_text(
-            cw // 2, ch // 2 + self.PIP_H // 2 + 2,
-            text=f"{count}/3",
-            fill="#888888", font=("Consolas", 8),
-        )

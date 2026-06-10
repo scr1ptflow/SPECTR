@@ -8,9 +8,9 @@ G = 9.80665
 
 
 class TargetInfo(Plugin):
-    name = "Target Info"
+    name = "System Info"
     version = "1.0.0"
-    description = "System info, route info, and target/body details"
+    description = "System info and target/body details"
 
     def on_load(self, overlay, event_bus, config, game=None, status=None):
         self.event_bus = event_bus
@@ -18,15 +18,17 @@ class TargetInfo(Plugin):
         self.status = status
         self._handler = self.on_event
         self.overlay = overlay
+        self.pcfg = config.plugin_config(self.name)
+        win_pos = self.pcfg.get("window_position", "center-right")
         self.win = overlay.create_plugin_window(
-            self.name, position="center-left", width=320, height=420,
+            self.name, position=win_pos, width=260, height=280,
         )
         parent = self.win.container
         self.win.attributes("-alpha", 1.0)
 
         font = (
             config.get("overlay", "font_family", default="Consolas"),
-            config.get("overlay", "font_size", default=11),
+            self.overlay._scaled_font_size,
         )
         font_bold = (font[0], font[1])
         font_small = (font[0], max(font[1] - 2, 8))
@@ -55,21 +57,20 @@ class TargetInfo(Plugin):
             self.alleg_frame, text="", font=font_small, bg=bg, fg=fg, anchor=tk.W,
         )
         self.alleg_label.pack(side=tk.LEFT)
+        self.alleg_sep = tk.Label(
+            self.alleg_frame, text="", font=font_small, bg=bg, fg=fg, anchor=tk.W,
+        )
+        self.alleg_sep.pack(side=tk.LEFT)
         self.sec_label = tk.Label(
             self.alleg_frame, text="", font=font_small, bg=bg, anchor=tk.W,
         )
         self.sec_label.pack(side=tk.LEFT)
         self.alleg_frame.pack(fill=tk.X)
 
-        self.route_line = tk.Label(
-            self.sys_frame, text="", font=font_small, bg=bg, fg=accent, anchor=tk.W,
-        )
-        self.route_line.pack(fill=tk.X)
-
         self.sys_frame.pack(fill=tk.X, pady=(0, 6))
 
         # === Separator (dynamic — shown only with target/body) ===
-        self.sep = tk.Frame(parent, bg="#333333", height=1)
+        self.sep = tk.Frame(parent, bg="#333333", height=max(1, round(1 * self.overlay._scale_factor)))
 
         # === Target / body info (dynamic) ===
         self.header = tk.Label(
@@ -118,20 +119,7 @@ class TargetInfo(Plugin):
         )
         self.body_materials_label.pack(fill=tk.X)
 
-        # === Footer (always visible at bottom) ===
-        self.footer_frame = tk.Frame(parent, bg=bg)
 
-        self.session_line = tk.Label(
-            self.footer_frame, text="", font=font_small, bg=bg, fg=dim, anchor=tk.W,
-        )
-        self.session_line.pack(fill=tk.X)
-
-        self.cmdr_line = tk.Label(
-            self.footer_frame, text="", font=font_small, bg=bg, fg=dim, anchor=tk.W,
-        )
-        self.cmdr_line.pack(fill=tk.X)
-
-        self.footer_frame.pack(fill=tk.X, pady=0)
 
         # === State ===
         self._mode = None
@@ -150,7 +138,7 @@ class TargetInfo(Plugin):
         self.stats = {"jumps": 0, "distance_ly": 0.0}
         self._navroute_mtime = 0
 
-        for evt in ("ShipTargeted", "FSSSignalDiscovered", "FSDJump",
+        for evt in ("ShipTargeted", "FSDJump",
                      "Location", "LoadGame", "SupercruiseExit",
                      "SupercruiseEntry", "ApproachBody", "LeaveBody",
                      "Touchdown", "Liftoff", "Scan",
@@ -159,12 +147,19 @@ class TargetInfo(Plugin):
 
         self._read_navroute()
         self._update_sys_display()
-        self._repack_footer()
         self.overlay.schedule(1000, self._poll_body)
+
+    def _update_dynamic_visibility(self):
+        dynamic = self.pcfg.get("dynamic", False)
+        if dynamic:
+            visible = self._mode in ("ship", "body")
+            self.win.attributes("-alpha", 1.0 if visible else 0.0)
+        else:
+            self.win.attributes("-alpha", 1.0)
 
     def on_unload(self):
         self._alive = False
-        for evt in ("ShipTargeted", "FSSSignalDiscovered", "FSDJump",
+        for evt in ("ShipTargeted", "FSDJump",
                      "Location", "LoadGame", "SupercruiseExit",
                      "SupercruiseEntry", "ApproachBody", "LeaveBody",
                      "Touchdown", "Liftoff", "Scan",
@@ -289,6 +284,7 @@ class TargetInfo(Plugin):
         elif event == "journal:NavRouteClear":
             self.route = []
             self.route_idx = -1
+            self._navroute_mtime = 0
             self._update_sys_display()
 
         elif event == "journal:StartJump":
@@ -299,10 +295,6 @@ class TargetInfo(Plugin):
                 self._show_ship(data)
             else:
                 self._try_body()
-            return
-
-        elif event == "journal:FSSSignalDiscovered":
-            self._show_fss(data)
             return
 
         elif event == "journal:SupercruiseExit":
@@ -336,7 +328,7 @@ class TargetInfo(Plugin):
                 self._show_body(self._current_body)
 
     def _try_body(self):
-        if self._mode in ("ship", "fss"):
+        if self._mode == "ship":
             return
         body = self._current_body
         if not body and self.status and self.status.body_name:
@@ -355,7 +347,7 @@ class TargetInfo(Plugin):
             body = self.status.body_name if self.status else None
             if body and body != self._current_body:
                 self._current_body = body
-                if self._mode not in ("ship", "fss"):
+                if self._mode != "ship":
                     self._show_body(body)
             elif not body and self._current_body:
                 self._current_body = ""
@@ -414,46 +406,14 @@ class TargetInfo(Plugin):
             self.subsystem_label.config(text="")
 
         self.sep.pack(fill=tk.X, pady=(0, 4))
-        self._repack_footer()
-
-    def _show_fss(self, data):
-        self._mode = "fss"
-        self.body_frame.pack_forget()
-        self.header.config(text="Signal")
-        self.header.pack(fill=tk.X, pady=(0, 2))
-        self.ship_frame.pack(fill=tk.X)
-
-        sig = data.get("SignalName_Localised") or data.get("SignalName", "")
-        uss = data.get("USSType_Localised", "")
-        faction = data.get("SpawningFaction", "")
-        threat = data.get("ThreatLevel")
-
-        self.name_label.config(text=sig if sig else "Unknown Signal")
-
-        parts = []
-        if uss and uss != sig:
-            parts.append(uss)
-        if faction:
-            parts.append(f"[{faction}]")
-        self.status_label.config(text="  ".join(parts))
-
-        extra = []
-        if threat is not None and threat > 0:
-            extra.append(f"Threat: {threat}")
-        remaining = data.get("TimeRemaining")
-        if remaining is not None and remaining > 0:
-            extra.append(f"Time: {remaining:.0f}s")
-        self.health_label.config(text="  ".join(extra))
-        self.subsystem_label.config(text="")
-
-        self.sep.pack(fill=tk.X, pady=(0, 4))
-        self._repack_footer()
+        self._update_dynamic_visibility()
+        self.overlay.resize_plugin(self.name)
 
     def _show_body(self, body_name):
         self._mode = "body"
         self._current_body = body_name
         self.ship_frame.pack_forget()
-        self.header.config(text="Body")
+        self.header.config(text="Target")
         self.header.pack(fill=tk.X, pady=(0, 2))
         self.body_frame.pack(fill=tk.X)
 
@@ -535,18 +495,15 @@ class TargetInfo(Plugin):
             self.body_materials_label.config(text="")
 
         self.sep.pack(fill=tk.X, pady=(0, 4))
-        self._repack_footer()
+        self._update_dynamic_visibility()
+        self.overlay.resize_plugin(self.name)
 
     def _hide_dynamic(self):
         self.ship_frame.pack_forget()
         self.body_frame.pack_forget()
         self.header.pack_forget()
         self.sep.pack_forget()
-        self._repack_footer()
-
-    def _repack_footer(self):
-        self.footer_frame.pack_forget()
-        self.footer_frame.pack(fill=tk.X, pady=0)
+        self.overlay.resize_plugin(self.name)
 
     _SEC_COLORS = {"low": "#44ff44", "medium": "#ffff00", "high": "#ff4444"}
     _ALLEG_COLORS = {
@@ -578,38 +535,11 @@ class TargetInfo(Plugin):
 
         sec = self._system_security.lower() if self._system_security else ""
         color = self._SEC_COLORS.get(sec, "")
+        self.alleg_sep.config(text="  |  " if self._system_security else "")
         self.sec_label.config(
-            text=f"  |  {self._system_security}" if self._system_security else "",
+            text=self._system_security if self._system_security else "",
             fg=color if color else "",
         )
+        self._update_dynamic_visibility()
 
-        # Route info
-        nxt = self._route_next()
-        dest = self._route_dest()
-        if self.route and len(self.route) >= 2:
-            dest_name = dest["name"] if dest else "?"
-            nxt_name = nxt["name"] if nxt else "?"
-            nxt_class = nxt.get("star_class", "") if nxt else ""
-            cs = f" ({nxt_class})" if nxt_class else ""
-            pos_str = f"#{self.route_idx + 1}" if self.route_idx >= 0 else "?"
-            total = len(self.route)
-            if dest and self.current_system == dest["name"]:
-                self.route_line.config(text="Arrived!", fg="#00d4aa")
-            else:
-                self.route_line.config(
-                    text=f"Dest: {dest_name}  |  Next: {nxt_name}{cs}  {pos_str} of {total}"
-                )
-        else:
-            self.route_line.config(text="")
 
-        # Session
-        sess_parts = [
-            f"Session: {self.stats['jumps']} jumps, {self.stats['distance_ly']:.0f} LY"
-        ]
-        self.session_line.config(text="  |  ".join(sess_parts))
-
-        # Commander
-        if self.commander_name:
-            self.cmdr_line.config(text=f"CMDR {self.commander_name}")
-        else:
-            self.cmdr_line.config(text="")

@@ -50,3 +50,18 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
+# --- Post-build: create deploy zip ---
+import zipfile as zfmod
+
+dist_dir = os.path.dirname(exe.name)
+if not os.path.isdir(dist_dir):
+    dist_dir = 'dist'
+
+exe_path = os.path.join(dist_dir, 'SPECTR.exe')
+zip_path = 'SPECTR.zip'
+
+if os.path.isfile(exe_path):
+    with zfmod.ZipFile(zip_path, 'w', zfmod.ZIP_DEFLATED) as zf:
+        zf.write(exe_path, 'SPECTR.exe')
+    print(f"Created {zip_path}")

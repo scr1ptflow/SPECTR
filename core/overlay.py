@@ -5,7 +5,6 @@ import ctypes
 from ctypes import wintypes
 import logging
 
-from . import edhm_colors
 
 logger = logging.getLogger(__name__)
 
@@ -50,19 +49,6 @@ ctypes.windll.user32.CallWindowProcW.argtypes = [
     WNDPROC, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
 ]
 
-# AddFontResourceExW flags
-FR_PRIVATE = 0x10
-
-gdi32 = ctypes.windll.gdi32
-gdi32.AddFontResourceExW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.LPVOID]
-gdi32.AddFontResourceExW.restype = ctypes.c_int
-
-_EURO_CAPS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "assets", "font", "EUROCAPS.TTF",
-)
-_EURO_CAPS_NAME = "Euro Caps"
-
 _DWM_ROUNDED = False
 
 def _enable_rounded_corners(hwnd):
@@ -81,6 +67,23 @@ def _enable_rounded_corners(hwnd):
         _DWM_ROUNDED = False
         logger.debug(f"DWM rounded corners not available: {e}")
 
+def _enable_dwm_blur(hwnd):
+    try:
+        class DWM_BLURBEHIND(ctypes.Structure):
+            _fields_ = [
+                ("dwFlags", ctypes.c_uint),
+                ("fEnable", ctypes.c_bool),
+                ("hRgnBlur", ctypes.c_void_p),
+                ("fTransitionOnMaximized", ctypes.c_bool),
+            ]
+        blur = DWM_BLURBEHIND()
+        blur.dwFlags = 1
+        blur.fEnable = True
+        ctypes.windll.dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(blur))
+        logger.debug("DWM blur behind enabled")
+    except Exception as e:
+        logger.debug(f"DWM blur behind not available: {e}")
+
 def _set_rounded_region(hwnd, width, height, radius):
     try:
         hrgn = ctypes.windll.gdi32.CreateRoundRectRgn(0, 0, width + 1, height + 1,
@@ -91,22 +94,6 @@ def _set_rounded_region(hwnd, width, height, radius):
     except Exception as e:
         logger.warning(f"Could not set rounded region: {e}")
     return False
-
-def _load_euro_caps():
-    if os.path.isfile(_EURO_CAPS_PATH):
-        try:
-            result = gdi32.AddFontResourceExW(_EURO_CAPS_PATH, FR_PRIVATE, None)
-            if result:
-                logger.info("Loaded Euro Caps font")
-                return True
-            else:
-                logger.warning("AddFontResourceExW returned 0 for Euro Caps")
-        except Exception as e:
-            logger.warning(f"Could not load Euro Caps font: {e}")
-    else:
-        logger.warning(f"Euro Caps font not found at {_EURO_CAPS_PATH}")
-    return False
-
 
 class PluginPanel:
     """Wraps a Frame to provide a Toplevel-like API for plugins."""
@@ -166,36 +153,47 @@ class PluginPanel:
 
 
 class Overlay:
+    STACK_PRIORITY = {
+        "Jump Tracker": 0,
+        "Compass": 1,
+        "Bio Scanner": 2,
+        "Combat Tracker": 10,
+        "System Info": 20,
+        "Exobiology Tracker": 30,
+    }
+
     def __init__(self, config):
         self.config = config
-        self._detect_edhm_colors()
         self.root = tk.Tk()
         self.root.title("ED Overlay")
         self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
         self.root.configure(bg="#000000")
         self.root.attributes("-transparentcolor", "#000000")
+        self.root.attributes("-alpha", config.get("overlay", "opacity", default=1.0))
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-
-        _load_euro_caps()
-        self._setup_styles()
-
-        self._game_attach = config.get("overlay", "attach", default=None)
-        ox = config.get("overlay", "offset_x", default=10)
-        oy = config.get("overlay", "offset_y", default=10)
-        self._base_ox = ox
-        self._base_oy = oy
 
         screen_w = self.root.winfo_screenwidth()
         screen_h = self.root.winfo_screenheight()
         self._screen_w = screen_w
         self._screen_h = screen_h
+        self._scale_factor = max(0.25, min(screen_w / 1920, screen_h / 1080))
+
+        self._setup_styles()
+
+        self._game_attach = config.get("overlay", "attach", default=None)
+        ox = config.get("overlay", "offset_x", default=0)
+        oy = config.get("overlay", "offset_y", default=0)
+        self._base_ox = ox
+        self._base_oy = oy
+
         self.root.geometry(f"{screen_w}x{screen_h}+0+0")
         self.root.update_idletasks()
         root_hwnd = self.root.winfo_id()
         _enable_rounded_corners(root_hwnd)
         if not _DWM_ROUNDED:
             _set_rounded_region(root_hwnd, screen_w, screen_h, radius=12)
+        _enable_dwm_blur(root_hwnd)
         self._make_click_through(root_hwnd)
         top_hwnd = ctypes.windll.user32.GetParent(root_hwnd)
         if top_hwnd:
@@ -224,23 +222,8 @@ class Overlay:
         self._saved_alphas = {}
         self._gui_focus = 0
         self._panel_alphas = {}
+        self._position_order = {}
 
-
-    def _detect_edhm_colors(self):
-        theme = edhm_colors.detect_edhm_theme()
-        if theme:
-            overlay = self.config.data.setdefault("overlay", {})
-            if theme.get("fg"):
-                overlay["fg_color"] = theme["fg"]
-            if theme.get("accent"):
-                overlay["accent_color"] = theme["accent"]
-            logger.info(
-                "EDHM-UI theme applied: %s (bg=%s, fg=%s, accent=%s)",
-                theme.get("theme_name", "unknown"),
-                theme.get("bg"),
-                theme.get("fg"),
-                theme.get("accent"),
-            )
 
     def _setup_styles(self):
         style = ttk.Style()
@@ -248,14 +231,15 @@ class Overlay:
         bg = self.config.get("overlay", "bg_color", default="#000000")
         fg = self.config.get("overlay", "fg_color", default="#9ACD32")
         accent = self.config.get("overlay", "accent_color", default="#6B8E23")
-        font_family = self.config.get("overlay", "font_family", default=_EURO_CAPS_NAME)
+        font_family = self.config.get("overlay", "font_family", default="Consolas")
         font_size = self.config.get("overlay", "font_size", default=11)
+        self._scaled_font_size = max(8, round(font_size * self._scale_factor))
 
         style.configure(
             "Overlay.TLabelframe",
             background=bg,
             foreground=accent,
-            font=(font_family, font_size),
+            font=(font_family, self._scaled_font_size),
             relief=tk.FLAT,
             borderwidth=0,
         )
@@ -263,30 +247,57 @@ class Overlay:
             "Overlay.TLabelframe.Label",
             background=bg,
             foreground=accent,
-            font=(font_family, font_size),
+            font=(font_family, self._scaled_font_size),
         )
         style.configure("Overlay.TFrame", background=bg)
         style.configure(
             "Overlay.TLabel",
             background=bg,
             foreground=fg,
-            font=(font_family, font_size),
+            font=(font_family, self._scaled_font_size),
         )
+
+    def _reapply_font(self):
+        family = self.config.get("overlay", "font_family", default="Consolas")
+        size = self._scaled_font_size
+        for panel in self._plugin_panels.values():
+            self._walk_font(panel._frame, family, size)
+
+    def _walk_font(self, widget, family, size):
+        try:
+            if isinstance(widget, tk.Label) and not isinstance(widget, ttk.Label):
+                cur = widget.cget("font")
+                if cur:
+                    try:
+                        cur_size = cur[1] if isinstance(cur, tuple) else size
+                        widget.config(font=(family, cur_size))
+                    except Exception:
+                        widget.config(font=(family, size))
+        except Exception:
+            pass
+        try:
+            for child in widget.winfo_children():
+                self._walk_font(child, family, size)
+        except Exception:
+            pass
 
     def _screen_pos(self, position, width, height, offset_x=0, offset_y=0):
         sw = self._screen_w
         sh = self._screen_h
         positions = {
             "top-left": (offset_x, offset_y),
+            "top": ((sw - width) // 2 + offset_x, offset_y),
             "top-right": (sw - width - offset_x, offset_y),
-            "center-top": ((sw - width) // 2 + offset_x, offset_y),
             "center-left": (offset_x, (sh - height) // 2),
+            "center": ((sw - width) // 2 + offset_x, (sh - height) // 2),
             "center-right": (sw - width - offset_x, (sh - height) // 2),
             "bottom-left": (offset_x, sh - height - offset_y),
+            "bottom": ((sw - width) // 2 + offset_x, sh - height - offset_y),
             "bottom-right": (sw - width - offset_x, sh - height - offset_y),
-            "center-bottom": ((sw - width) // 2 + offset_x, sh - height - offset_y),
-            "bottom-center": ((sw - width) // 2 + offset_x, sh - height - offset_y),
         }
+        positions["center-top"] = positions["top"]
+        positions["center-bottom"] = positions["bottom"]
+        positions["bottom-center"] = positions["bottom"]
         return positions.get(position, (sw - width - offset_x, offset_y))
 
     def _make_click_through(self, hwnd):
@@ -363,20 +374,75 @@ class Overlay:
         self._plugin_containers[plugin_name] = frame
         return frame
 
-    def create_plugin_window(self, plugin_name, position="center-top", width=600, height=150):
-        x, y = self._screen_pos(position, width, height, self._base_ox, self._base_oy)
+    def create_plugin_window(self, plugin_name, position="center-top", width=600, height=150, max_height=None):
+        self._position_order.setdefault(position, []).append(plugin_name)
+        self._position_order[position].sort(key=lambda n: self.STACK_PRIORITY.get(n, 999))
+        sf = self._scale_factor
+        scaled_w = max(100, round(width * sf))
+        scaled_h = max(50, round(height * sf))
+        scaled_max_h = round(max_height * sf) if max_height is not None else None
+        pad = (max(3, round(6 * sf)), max(2, round(4 * sf)))
         frame = ttk.LabelFrame(
             self.root, text=plugin_name, style="Overlay.TLabelframe",
-            padding=(6, 4),
+            padding=pad,
         )
-        frame.place(x=x, y=y, width=width, height=height)
-
-        panel = PluginPanel(frame, self, plugin_name, position, width, height)
-        panel._place_kwargs = {"x": x, "y": y, "width": width, "height": height}
-
+        panel = PluginPanel(frame, self, plugin_name, position, scaled_w, scaled_h)
+        panel._scale_factor = sf
+        panel._place_kwargs = {"width": scaled_w}
+        panel._pl_max_h = scaled_max_h if scaled_max_h is not None else scaled_h
         self._plugin_panels[plugin_name] = panel
         self._extra_windows.append(panel)
+        self._restack(position)
         return panel
+
+    def reposition_plugin(self, plugin_name, position):
+        panel = self._plugin_panels.get(plugin_name)
+        if not panel:
+            return
+        old_pos = panel._pl_pos
+        for pos_list in self._position_order.values():
+            if plugin_name in pos_list:
+                pos_list.remove(plugin_name)
+                break
+        self._position_order.setdefault(position, []).append(plugin_name)
+        self._position_order[position].sort(key=lambda n: self.STACK_PRIORITY.get(n, 999))
+        panel._pl_pos = position
+        self._restack(old_pos)
+        self._restack(position)
+
+    def _restack(self, position):
+        order = self._position_order.get(position)
+        if not order:
+            return
+        gap = max(2, round(4 * self._scale_factor))
+        y = None
+        for pname in order:
+            p = self._plugin_panels.get(pname)
+            if not p:
+                continue
+            x, cur_y = self._screen_pos(position, p._pl_w, p._pl_h, self._base_ox + p._pl_ox, self._base_oy + p._pl_oy)
+            if y is None:
+                y = cur_y
+            kw = {"x": x, "y": y, "width": p._pl_w}
+            p._place_kwargs = kw
+            if p._shown:
+                p._frame.place(**kw)
+                p._frame.update_idletasks()
+            actual_h = p._frame.winfo_reqheight()
+            if p._pl_max_h and actual_h > p._pl_max_h:
+                actual_h = p._pl_max_h
+                kw["height"] = actual_h
+                p._place_kwargs = kw
+                if p._shown:
+                    p._frame.place(**kw)
+            p._pl_h = actual_h
+            y += actual_h + gap
+
+    def resize_plugin(self, plugin_name):
+        """Recalculate a plugin's auto-height and restack its position."""
+        panel = self._plugin_panels.get(plugin_name)
+        if panel:
+            self._restack(panel._pl_pos)
 
     def remove_plugin_container(self, plugin_name):
         frame = self._plugin_containers.pop(plugin_name, None)
@@ -389,6 +455,10 @@ class Overlay:
     def remove_plugin_window(self, plugin_name):
         panel = self._plugin_panels.pop(plugin_name, None)
         if panel:
+            for pos_list in self._position_order.values():
+                if plugin_name in pos_list:
+                    pos_list.remove(plugin_name)
+                    break
             try:
                 self._extra_windows.remove(panel)
             except ValueError:
@@ -554,7 +624,7 @@ class Overlay:
             try:
                 pos = panel._pl_pos
                 w = panel._pl_w
-                h = panel._pl_h
+                h = panel._pl_h  # auto-calculated height
                 ox = panel._pl_ox
                 oy = panel._pl_oy
                 positions = {
@@ -570,7 +640,9 @@ class Overlay:
                 }
                 x, y = positions.get(pos, (gw - w - bo, by))
                 x, y = x + ox, y + oy
-                kw = {"x": x, "y": y, "width": w, "height": h}
+                kw = {"x": x, "y": y, "width": w}
+                if panel._pl_max_h and h >= panel._pl_max_h:
+                    kw["height"] = h
                 panel._place_kwargs = kw
                 if panel._shown:
                     panel._frame.place(**kw)

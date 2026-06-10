@@ -59,7 +59,7 @@ class MaterialsTracker(Plugin):
         self._parent = parent
         font = (
             self.config.get("overlay", "font_family", default="Consolas"),
-            self.config.get("overlay", "font_size", default=11),
+            self.overlay._scaled_font_size,
         )
         font_small = (font[0], max(font[1] - 2, 8))
         font_bold = (font[0], font[1])
