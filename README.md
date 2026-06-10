@@ -82,6 +82,21 @@ It runs on intuition, late-night engineering decisions, and an unhealthy amount 
 
 ---
 
+🙏 Acknowledgements
+
+SPECTR would not exist in its current form without the incredible work done by the Elite Dangerous community over the years.
+
+Several systems, ideas, workflows, and interface concepts were inspired by — or directly studied from — existing community tools developed by passionate commanders and developers.
+
+Special thanks to:
+
+EDDiscovery — an extremely influential Elite Dangerous companion application featuring journal parsing, exploration tracking, mapping systems, plugin support, and modular information panels. Its architecture, panel philosophy, and ecosystem helped shape many design decisions behind SPECTR.
+SrvSurvey — a fantastic exploration and exobiology-focused tool whose usability and exploration-oriented workflows served as inspiration for several overlay concepts and quality-of-life systems.
+
+Huge respect and appreciation to the developers and contributors behind these projects for helping push the Elite Dangerous tooling ecosystem forward.
+
+---
+
 ## 📌 Notes
 
 - Designed for *Elite Dangerous*  
