@@ -91,6 +91,7 @@ Several systems, ideas, workflows, and interface concepts were inspired by — o
 Special thanks to:
 
 EDDiscovery — an extremely influential Elite Dangerous companion application featuring journal parsing, exploration tracking, mapping systems, plugin support, and modular information panels. Its architecture, panel philosophy, and ecosystem helped shape many design decisions behind SPECTR.
+
 SrvSurvey — a fantastic exploration and exobiology-focused tool whose usability and exploration-oriented workflows served as inspiration for several overlay concepts and quality-of-life systems.
 
 Huge respect and appreciation to the developers and contributors behind these projects for helping push the Elite Dangerous tooling ecosystem forward.
