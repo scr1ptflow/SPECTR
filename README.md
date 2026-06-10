@@ -12,7 +12,7 @@ It is built around a plugin-based architecture, allowing each system to independ
 
 ## 🧩 Plugin System Overview
 
-Each plugin operates as an independent module responsible for a specific data domain. Positioning is adaptive and configurable depending on user layout preferences.
+Each plugin operates as an independent module responsible for a specific data domain.
 
 ---
 
@@ -89,5 +89,3 @@ It runs on intuition, late-night engineering decisions, and an unhealthy amount 
 - Use at your own risk during gameplay  
 
 ---
-- add **icons per plugin (HUD-style glyph system)**
-- or design a **real mock screenshot overlay showing all plugins positioned on screen**
