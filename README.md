@@ -94,7 +94,7 @@ EDDiscovery — an extremely influential Elite Dangerous companion application f
 
 SrvSurvey — a fantastic exploration and exobiology-focused tool whose usability and exploration-oriented workflows served as inspiration for several overlay concepts and quality-of-life systems.
 
-EDMarketConnector (EDMC)
+**[EDMarketConnector (EDMC)](https://github.com/EDCD/EDMarketConnector)**
 A widely used community tool for exporting Elite Dangerous journal and market data to external services. Its plugin-based architecture and extensibility model directly influenced SPECTR’s plugin system design, particularly the separation of data ingestion, processing, and external integration concerns.
 
 Huge respect and appreciation to the developers and contributors behind these projects for helping push the Elite Dangerous tooling ecosystem forward.
