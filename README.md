@@ -90,9 +90,9 @@ Several systems, ideas, workflows, and interface concepts were inspired by — o
 
 Special thanks to:
 
-EDDiscovery — an extremely influential Elite Dangerous companion application featuring journal parsing, exploration tracking, mapping systems, plugin support, and modular information panels. Its architecture, panel philosophy, and ecosystem helped shape many design decisions behind SPECTR.
+**[EDDiscovery](https://github.com/EDDiscovery/EDDiscovery)** — an extremely influential Elite Dangerous companion application featuring journal parsing, exploration tracking, mapping systems, plugin support, and modular information panels. Its architecture, panel philosophy, and ecosystem helped shape many design decisions behind SPECTR.
 
-SrvSurvey — a fantastic exploration and exobiology-focused tool whose usability and exploration-oriented workflows served as inspiration for several overlay concepts and quality-of-life systems.
+**[SrvSurvey](https://github.com/njthomson/SrvSurvey)** — a fantastic exploration and exobiology-focused tool whose usability and exploration-oriented workflows served as inspiration for several overlay concepts and quality-of-life systems.
 
 **[EDMarketConnector (EDMC)](https://github.com/EDCD/EDMarketConnector)**
 A widely used community tool for exporting Elite Dangerous journal and market data to external services. Its plugin-based architecture and extensibility model directly influenced SPECTR’s plugin system design, particularly the separation of data ingestion, processing, and external integration concerns.
