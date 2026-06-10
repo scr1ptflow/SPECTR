@@ -1,90 +1,96 @@
+
 # **SPECTR**  
 ### *Spatial Perception Environmental Command Terminal Readout*
 
 ---
 
-SPECTR is a lightweight overlay tool designed primarily for **Elite Dangerous**, providing real-time informational readouts directly over gameplay.
+SPECTR is a lightweight overlay system designed for **Elite Dangerous**, providing modular real-time informational readouts directly over gameplay.
 
-It enhances situational awareness by displaying contextual data in a clean, non-intrusive command-terminal style interface.
-
----
-
-## ✨ Features
-
-- 🎮 In-game overlay for *Elite Dangerous*  
-- 📡 Real-time environmental and system information  
-- ⚡ Minimal performance overhead  
-- 🧩 Modular design for future expansion  
-- 🎛️ Customizable display elements *(WIP)*  
+It is built around a plugin-based architecture, allowing each system to independently render contextual cockpit data without overwhelming the interface.
 
 ---
 
-## 🧠 Philosophy
+## 🧩 Plugin System Overview
 
-SPECTR is built with a focus on **clarity, immersion, and extensibility**.
-
-The goal is to provide useful information without breaking the cockpit experience or overwhelming the player with UI noise.
+Each plugin operates as an independent module responsible for a specific data domain. Positioning is adaptive and configurable depending on user layout preferences.
 
 ---
 
-## 🖥️ Overlay Preview
+### 📊 Core Plugins
 
-> *(Replace these with real screenshots when available)*
-
-### Main HUD Overlay
-
-┌──────────────── SPECTR ────────────────┐
-│ System: HIP 22460 │
-│ Body: Planet A-3 │
-│ Throttle: 75% │
-│ Heat: 62% │
-│ Signal: Strong │
-└───────────────────────────────────────┘
-
-
-### Compact Mode
-
-[ SPECTR ] HIP 22460 | A-3 | 62% Heat | 75% Throttle
-
+| Plugin | Version | Position | Description |
+|--------|--------|----------|-------------|
+| **Bio Scanner** | 2.0.0 | center-top | Shows species name + 3-pip scan gauge per body from ScanOrganic journal events |
+| **Codex Bingo** | 1.0.0 | embedded in Settings tab | Codex exploration tracker with TreeView grouped by region/category, tracks per-commander discoveries via Canonn API |
+| **Combat Tracker** | 1.2.0 | bottom-center | Tracks kills, bounty (CR), combat bonds (CR) per session. Auto-hides when not in combat. Persists stats to file |
+| **Compass** | 2.1.0 | center-top | 180° surface compass with heading, bearing to target, altitude/lat/lon. Auto-shows near surface |
+| **Exobiology Tracker** | 2.2.0 | center-right | Predicts bio life per body using planet data + EDSM. Color-codes known (green) / new (red) from CodexEntry events |
+| **Jump Tracker** | 5.0.0 | center-top (configurable) | Next jump destination, route progress bar, star class, distance remaining, neutron/refuel warnings |
+| **Materials Tracker** | 1.0.0 | embedded in Settings tab | Tracks Raw/Manufactured/Encoded material counts from journal events. Persists to file |
+| **Plugin Manager** | 2.0.0 | standalone Settings window | Tabbed settings: toggle plugins on/off, compass target input, Codex/Materials embedded UIs, API key config, hide-on-unfocus toggle |
+| **Target Info** | 2.0.0 | center-left | Dynamic panel: system info + route, and one of ship target (hull/shield/subsystem), FSS signal (threat/time), or body (gravity/temp/atmo/materials) |
 
 ---
 
-## 📸 Screenshots
+## 🧠 Design Philosophy
 
-Once available, add real captures here:
+SPECTR is designed to behave like a **layered cockpit intelligence system**:
 
-- In-flight overlay view  
-- Station approach HUD  
-- Exploration / scan data overlay  
+- Each plugin is self-contained  
+- No single monolithic HUD  
+- Information appears only when relevant  
+- Priority is given to readability over density  
 
-*(You can later replace this section with actual images like:)*
+The goal is to enhance awareness without overwhelming the pilot.
 
-```md
-![Overlay Example](assets/spectr-overlay.png)
-⚠️ Status
+---
+
+## ⚡ Performance Overhead
+
+SPECTR is designed to keep performance impact minimal by:
+
+- Updating modules only when relevant events occur  
+- Avoiding unnecessary per-frame computations where possible  
+- Rendering only visible UI layers  
+
+---
+
+## ⚠️ Status
 
 This project is currently in active development.
 
 Expect:
+- ongoing plugin changes  
+- experimental systems  
+- occasional instability  
 
-rapid iteration
-experimental features
-occasional instability
-🛠️ Tech Stack
-Python (core implementation)
-🤖 Vibe Coded™
+---
 
-Yes — this project is vibe coded.
+## 🛠️ Tech Stack
+
+- Python (core implementation)
+
+---
+
+## 🤖 Vibe Coded™
+
+Yes — this project is *vibe coded*.
 
 It runs on intuition, late-night engineering decisions, and an unhealthy amount of:
 
-“this should probably work”
+> “this should probably work”
 
-Proceed accordingly.
+---
 
-📌 Notes
-Designed for Elite Dangerous
-Not affiliated with Frontier Developments
-Use at your own risk during gameplay
-Not affiliated with Frontier Developments
-Use at your own risk during gameplay
+## 📌 Notes
+
+- Designed for *Elite Dangerous*  
+- Not affiliated with Frontier Developments  
+- Use at your own risk during gameplay  
+
+---
+
+If you want next step polish, I can:
+- turn this into a **multi-section docs site layout (README + /docs/plugins.md)**
+- add **icons per plugin (HUD-style glyph system)**
+- or design a **real mock screenshot overlay showing all plugins positioned on screen**
