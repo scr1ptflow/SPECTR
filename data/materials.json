@@ -1,0 +1,412 @@
+{
+  "Raw": {
+    "iron": {
+      "name": "Iron",
+      "count": 214
+    },
+    "nickel": {
+      "name": "Nickel",
+      "count": 214
+    },
+    "lead": {
+      "name": "Lead",
+      "count": 83
+    },
+    "chromium": {
+      "name": "Chromium",
+      "count": 214
+    },
+    "niobium": {
+      "name": "Niobium",
+      "count": 18
+    },
+    "germanium": {
+      "name": "Germanium",
+      "count": 14
+    },
+    "manganese": {
+      "name": "Manganese",
+      "count": 172
+    },
+    "tungsten": {
+      "name": "Tungsten",
+      "count": 12
+    },
+    "zirconium": {
+      "name": "Zirconium",
+      "count": 24
+    },
+    "ruthenium": {
+      "name": "Ruthenium",
+      "count": 10
+    },
+    "antimony": {
+      "name": "Antimony",
+      "count": 10
+    },
+    "tellurium": {
+      "name": "Tellurium",
+      "count": 14
+    },
+    "molybdenum": {
+      "name": "Molybdenum",
+      "count": 6
+    },
+    "phosphorus": {
+      "name": "Phosphorus",
+      "count": 33
+    },
+    "arsenic": {
+      "name": "Arsenic",
+      "count": 2
+    },
+    "sulphur": {
+      "name": "Sulphur",
+      "count": 47
+    },
+    "carbon": {
+      "name": "Carbon",
+      "count": 79
+    },
+    "tin": {
+      "name": "Tin",
+      "count": 24
+    },
+    "rhenium": {
+      "name": "Rhenium",
+      "count": 21
+    },
+    "vanadium": {
+      "name": "Vanadium",
+      "count": 31
+    },
+    "cadmium": {
+      "name": "Cadmium",
+      "count": 12
+    },
+    "yttrium": {
+      "name": "Yttrium",
+      "count": 7
+    },
+    "technetium": {
+      "name": "Technetium",
+      "count": 12
+    },
+    "polonium": {
+      "name": "Polonium",
+      "count": 10
+    },
+    "zinc": {
+      "name": "Zinc",
+      "count": 10
+    },
+    "boron": {
+      "name": "Boron",
+      "count": 3
+    }
+  },
+  "Manufactured": {
+    "basicconductors": {
+      "name": "Basic Conductors",
+      "count": 3
+    },
+    "shieldingsensors": {
+      "name": "Shielding Sensors",
+      "count": 3
+    },
+    "hybridcapacitors": {
+      "name": "Hybrid Capacitors",
+      "count": 23
+    },
+    "shieldemitters": {
+      "name": "Shield Emitters",
+      "count": 3
+    },
+    "conductiveceramics": {
+      "name": "Conductive Ceramics",
+      "count": 1
+    },
+    "polymercapacitors": {
+      "name": "Polymer Capacitors",
+      "count": 17
+    },
+    "mechanicalcomponents": {
+      "name": "Mechanical Components",
+      "count": 28
+    },
+    "focuscrystals": {
+      "name": "Focus Crystals",
+      "count": 5
+    },
+    "galvanisingalloys": {
+      "name": "Galvanising Alloys",
+      "count": 3
+    },
+    "chemicalprocessors": {
+      "name": "Chemical Processors",
+      "count": 47
+    },
+    "militarygradealloys": {
+      "name": "Military Grade Alloys",
+      "count": 37
+    },
+    "chemicaldistillery": {
+      "name": "Chemical Distillery",
+      "count": 22
+    },
+    "temperedalloys": {
+      "name": "Tempered Alloys",
+      "count": 81
+    },
+    "heatresistantceramics": {
+      "name": "Heat Resistant Ceramics",
+      "count": 51
+    },
+    "precipitatedalloys": {
+      "name": "Precipitated Alloys",
+      "count": 16
+    },
+    "thermicalloys": {
+      "name": "Thermic Alloys",
+      "count": 18
+    },
+    "protoheatradiators": {
+      "name": "Proto Heat Radiators",
+      "count": 7
+    },
+    "militarysupercapacitors": {
+      "name": "Military Supercapacitors",
+      "count": 25
+    },
+    "mechanicalscrap": {
+      "name": "Mechanical Scrap",
+      "count": 80
+    },
+    "compoundshielding": {
+      "name": "Compound Shielding",
+      "count": 3
+    },
+    "protolightalloys": {
+      "name": "Proto Light Alloys",
+      "count": 1
+    },
+    "improvisedcomponents": {
+      "name": "Improvised Components",
+      "count": 7
+    },
+    "guardian_techcomponent": {
+      "name": "Guardian Technology Component",
+      "count": 9
+    },
+    "guardian_powercell": {
+      "name": "Guardian Power Cell",
+      "count": 90
+    },
+    "guardian_powerconduit": {
+      "name": "Guardian Power Conduit",
+      "count": 93
+    },
+    "guardian_sentinel_wreckagecomponents": {
+      "name": "Guardian Wreckage Components",
+      "count": 48
+    },
+    "guardian_sentinel_weaponparts": {
+      "name": "Guardian Sentinel Weapon Parts",
+      "count": 21
+    },
+    "salvagedalloys": {
+      "name": "Salvaged Alloys",
+      "count": 27
+    },
+    "gridresistors": {
+      "name": "Grid Resistors",
+      "count": 85
+    },
+    "filamentcomposites": {
+      "name": "Filament Composites",
+      "count": 5
+    },
+    "refinedfocuscrystals": {
+      "name": "Refined Focus Crystals",
+      "count": 27
+    },
+    "heatconductionwiring": {
+      "name": "Heat Conduction Wiring",
+      "count": 71
+    },
+    "heatdispersionplate": {
+      "name": "Heat Dispersion Plate",
+      "count": 27
+    },
+    "heatexchangers": {
+      "name": "Heat Exchangers",
+      "count": 9
+    },
+    "heatvanes": {
+      "name": "Heat Vanes",
+      "count": 6
+    },
+    "mechanicalequipment": {
+      "name": "Mechanical Equipment",
+      "count": 24
+    },
+    "configurablecomponents": {
+      "name": "Configurable Components",
+      "count": 19
+    },
+    "electrochemicalarrays": {
+      "name": "Electrochemical Arrays",
+      "count": 12
+    },
+    "crystalshards": {
+      "name": "Crystal Shards",
+      "count": 18
+    },
+    "uncutfocuscrystals": {
+      "name": "Flawed Focus Crystals",
+      "count": 25
+    },
+    "phasealloys": {
+      "name": "Phase Alloys",
+      "count": 11
+    },
+    "pharmaceuticalisolators": {
+      "name": "Pharmaceutical Isolators",
+      "count": 11
+    }
+  },
+  "Encoded": {
+    "encryptioncodes": {
+      "name": "Tagged Encryption Codes",
+      "count": 93
+    },
+    "scandatabanks": {
+      "name": "Classified Scan Databanks",
+      "count": 37
+    },
+    "encryptionarchives": {
+      "name": "Atypical Encryption Archives",
+      "count": 137
+    },
+    "adaptiveencryptors": {
+      "name": "Adaptive Encryptors Capture",
+      "count": 27
+    },
+    "industrialfirmware": {
+      "name": "Cracked Industrial Firmware",
+      "count": 59
+    },
+    "consumerfirmware": {
+      "name": "Modified Consumer Firmware",
+      "count": 51
+    },
+    "disruptedwakeechoes": {
+      "name": "Atypical Disrupted Wake Echoes",
+      "count": 14
+    },
+    "wakesolutions": {
+      "name": "Strange Wake Solutions",
+      "count": 11
+    },
+    "hyperspacetrajectories": {
+      "name": "Eccentric Hyperspace Trajectories",
+      "count": 6
+    },
+    "dataminedwake": {
+      "name": "Datamined Wake Exceptions",
+      "count": 8
+    },
+    "classifiedscandata": {
+      "name": "Classified Scan Fragment",
+      "count": 10
+    },
+    "shieldfrequencydata": {
+      "name": "Peculiar Shield Frequency Data",
+      "count": 20
+    },
+    "decodedemissiondata": {
+      "name": "Decoded Emission Data",
+      "count": 21
+    },
+    "emissiondata": {
+      "name": "Unexpected Emission Data",
+      "count": 33
+    },
+    "shieldpatternanalysis": {
+      "name": "Aberrant Shield Pattern Analysis",
+      "count": 30
+    },
+    "bulkscandata": {
+      "name": "Anomalous Bulk Scan Data",
+      "count": 13
+    },
+    "compactemissionsdata": {
+      "name": "Abnormal Compact Emissions Data",
+      "count": 21
+    },
+    "ancientbiologicaldata": {
+      "name": "Pattern Alpha Obelisk Data",
+      "count": 12
+    },
+    "ancientlanguagedata": {
+      "name": "Pattern Delta Obelisk Data",
+      "count": 3
+    },
+    "ancientculturaldata": {
+      "name": "Pattern Beta Obelisk Data",
+      "count": 3
+    },
+    "securityfirmware": {
+      "name": "Security Firmware Patch",
+      "count": 12
+    },
+    "scrambledemissiondata": {
+      "name": "Exceptional Scrambled Emission Data",
+      "count": 17
+    },
+    "shielddensityreports": {
+      "name": "Untypical Shield Scans",
+      "count": 42
+    },
+    "shieldsoakanalysis": {
+      "name": "Inconsistent Shield Soak Analysis",
+      "count": 32
+    },
+    "embeddedfirmware": {
+      "name": "Modified Embedded Firmware",
+      "count": 6
+    },
+    "fsdtelemetry": {
+      "name": "Anomalous FSD Telemetry",
+      "count": 3
+    },
+    "symmetrickeys": {
+      "name": "Open Symmetric Keys",
+      "count": 90
+    },
+    "encryptedfiles": {
+      "name": "Unusual Encrypted Files",
+      "count": 81
+    },
+    "legacyfirmware": {
+      "name": "Specialised Legacy Firmware",
+      "count": 49
+    },
+    "encodedscandata": {
+      "name": "Divergent Scan Data",
+      "count": 26
+    },
+    "archivedemissiondata": {
+      "name": "Irregular Emission Data",
+      "count": 27
+    },
+    "shieldcyclerecordings": {
+      "name": "Distorted Shield Cycle Recordings",
+      "count": 69
+    },
+    "scanarchives": {
+      "name": "Unidentified Scan Archives",
+      "count": 30
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "journal_path": null,
+  "overlay": {
+    "opacity": 0.37,
+    "position": "top-right",
+    "width": 320,
+    "height": 600,
+    "offset_x": 10,
+    "offset_y": 10,
+    "font_family": "Euro Caps",
+    "font_size": 11,
+    "bg_color": "#000000",
+    "fg_color": "#ffa500",
+    "accent_color": "#ffa500",
+    "hide_on_unfocus": false,
+    "fg_opacity": 0.63,
+    "bg_opacity": 0.0
+  },
+  "journal": {
+    "poll_interval": 0.5
+  },
+  "api_keys": {
+    "edsm_key": "62f530e534280b64682dc6699ebac7269e762169",
+    "inara_key": "89dq6pftfp0cc0oo4kgkwk04w0sgggw4c0owwk0"
+  },
+  "plugins": {
+    "Bio Scanner": {
+      "enabled": true
+    },
+    "Jump Tracker": {
+      "enabled": true
+    },
+    "Exobiology Tracker": {
+      "enabled": true
+    },
+    "Combat Tracker": {
+      "enabled": true
+    },
+    "Compass": {
+      "enabled": true
+    },
+    "FSS Overlay": {
+      "enabled": false
+    },
+    "Guardian Tracker": {
+      "enabled": true
+    },
+    "Target Info": {
+      "enabled": true
+    }
+  }
+}
