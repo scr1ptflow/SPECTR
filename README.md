@@ -89,8 +89,5 @@ It runs on intuition, late-night engineering decisions, and an unhealthy amount 
 - Use at your own risk during gameplay  
 
 ---
-
-If you want next step polish, I can:
-- turn this into a **multi-section docs site layout (README + /docs/plugins.md)**
 - add **icons per plugin (HUD-style glyph system)**
 - or design a **real mock screenshot overlay showing all plugins positioned on screen**
