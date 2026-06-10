@@ -20,15 +20,15 @@ Each plugin operates as an independent module responsible for a specific data do
 
 | Plugin | Version | Position | Description |
 |--------|--------|----------|-------------|
-| **Bio Scanner** | 2.0.0 | center-top | Shows species name + 3-pip scan gauge per body from ScanOrganic journal events |
+| **Bio Scanner** | 1.0.0 | center-top | Shows species name + 3-pip scan gauge per body from ScanOrganic journal events |
 | **Codex Bingo** | 1.0.0 | embedded in Settings tab | Codex exploration tracker with TreeView grouped by region/category, tracks per-commander discoveries via Canonn API |
-| **Combat Tracker** | 1.2.0 | bottom-center | Tracks kills, bounty (CR), combat bonds (CR) per session. Auto-hides when not in combat. Persists stats to file |
-| **Compass** | 2.1.0 | center-top | 180° surface compass with heading, bearing to target, altitude/lat/lon. Auto-shows near surface |
-| **Exobiology Tracker** | 2.2.0 | center-right | Predicts bio life per body using planet data + EDSM. Color-codes known (green) / new (red) from CodexEntry events |
-| **Jump Tracker** | 5.0.0 | center-top (configurable) | Next jump destination, route progress bar, star class, distance remaining, neutron/refuel warnings |
+| **Combat Tracker** | 1.0.0 | bottom-center | Tracks kills, bounty (CR), combat bonds (CR) per session. Auto-hides when not in combat. Persists stats to file |
+| **Compass** | 1.0.0 | center-top | 180° surface compass with heading, bearing to target, altitude/lat/lon. Auto-shows near surface |
+| **Exobiology Tracker** | 1.0.0 | center-right | Predicts bio life per body using planet data + EDSM. Color-codes known (green) / new (red) from CodexEntry events |
+| **Jump Tracker** | 1.0.0 | center-top (configurable) | Next jump destination, route progress bar, star class, distance remaining, neutron/refuel warnings |
 | **Materials Tracker** | 1.0.0 | embedded in Settings tab | Tracks Raw/Manufactured/Encoded material counts from journal events. Persists to file |
-| **Plugin Manager** | 2.0.0 | standalone Settings window | Tabbed settings: toggle plugins on/off, compass target input, Codex/Materials embedded UIs, API key config, hide-on-unfocus toggle |
-| **Target Info** | 2.0.0 | center-left | Dynamic panel: system info + route, and one of ship target (hull/shield/subsystem), FSS signal (threat/time), or body (gravity/temp/atmo/materials) |
+| **Plugin Manager** | 1.0.0 | standalone Settings window | Tabbed settings: toggle plugins on/off, compass target input, Codex/Materials embedded UIs, API key config, hide-on-unfocus toggle |
+| **Target Info** | 1.0.0 | center-left | Dynamic panel: system info + route, and one of ship target (hull/shield/subsystem), FSS signal (threat/time), or body (gravity/temp/atmo/materials) |
 
 ---
 
