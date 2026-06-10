@@ -20,8 +20,8 @@
     "poll_interval": 0.5
   },
   "api_keys": {
-    "edsm_key": "62f530e534280b64682dc6699ebac7269e762169",
-    "inara_key": "89dq6pftfp0cc0oo4kgkwk04w0sgggw4c0owwk0"
+    "edsm_key": "",
+    "inara_key": ""
   },
   "plugins": {
     "Bio Scanner": {
