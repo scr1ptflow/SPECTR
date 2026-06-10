@@ -1,0 +1,6 @@
+# No external dependencies required for the base overlay.
+#
+# Optional enhancements:
+#   pynput    - keyboard hotkey support (toggle overlay visibility)
+#   watchdog  - efficient file monitoring (alternative to polling)
+#   pygame    - audio alerts for events

@@ -1,0 +1,17 @@
+20:10:31 [INFO] core.edhm_colors: Detected EDHM theme: Elite Default - ORANGE, accent=#ffa500, fg=#ffa500
+20:10:31 [INFO] core.overlay: EDHM-UI theme applied: Elite Default - ORANGE (bg=#ffa500, fg=#ffa500, accent=#ffa500)
+20:10:31 [INFO] core.overlay: Loaded Euro Caps font
+20:10:31 [INFO] core.plugin_manager: Loaded plugin: Bio Scanner v2.0.0
+20:10:31 [INFO] core.plugin_manager: Loaded plugin: Codex Bingo v1.0.0
+20:10:31 [INFO] core.plugin_manager: Loaded plugin: Combat Tracker v1.2.0
+20:10:31 [INFO] core.plugin_manager: Loaded plugin: Compass v2.1.0
+20:10:32 [INFO] core.plugin_manager: Loaded plugin: Exobiology Tracker v2.2.0
+20:10:32 [INFO] core.plugin_manager: Plugin disabled: FSS Overlay
+20:10:32 [INFO] core.plugin_manager: Loaded plugin: Guardian Tracker v1.1.0
+20:10:32 [INFO] core.plugin_manager: Loaded plugin: Jump Tracker v5.0.0
+20:10:32 [INFO] core.plugin_manager: Loaded plugin: Materials Tracker v1.0.0
+20:10:32 [INFO] core.plugin_manager: Loaded plugin: Plugin Manager v2.0.0
+20:10:32 [INFO] core.plugin_manager: Loaded plugin: Target Info v2.0.0
+20:10:32 [INFO] core.journal: Replayed 6088 events from 24 journal files
+20:10:32 [INFO] core.journal: Journal monitor started
+20:10:32 [INFO] core.journal: Monitoring journal: Journal.2026-06-06T131353.01.log
