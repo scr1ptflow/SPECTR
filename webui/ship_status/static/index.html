@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR Ship Status</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #ccc;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    padding: 0;
+    min-height: 100vh;
+  }
+  .lcars-bar {
+    background: #ff9900;
+    height: 32px;
+    border-radius: 0 16px 16px 0;
+    margin: 12px 0 20px;
+    display: flex; align-items: center;
+    width: 60%;
+  }
+  .lcars-bar .label {
+    color: #000;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    padding-left: 24px;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+  .top-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #0a0a1a;
+    border: 2px solid #2a2a4a;
+    border-radius: 0 20px 20px 20px;
+    padding: 16px 18px;
+  }
+  .stat-card .label {
+    color: #ff9900;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stat-card .pct {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .stat-card .bar-track {
+    height: 10px;
+    background: #1a1a2e;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .stat-card .bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.3s;
+  }
+  .bar-shield { background: #00bbcc; }
+  .bar-hull { background: #ff9900; }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cat-header {
+    color: #000;
+    background: #cc8844;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 900;
+    padding: 6px 16px;
+    margin-bottom: 8px;
+    border-radius: 0 12px 12px 0;
+    width: fit-content;
+    min-width: 140px;
+  }
+  .module {
+    background: #0a0a1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 0 12px 12px 12px;
+    padding: 8px 14px;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .module .name {
+    flex: 1;
+    font-size: 0.8rem;
+    color: #ccc;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .module .mini-bar {
+    width: 100px;
+    height: 8px;
+    background: #1a1a2e;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .module .mini-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: #00bbcc;
+    transition: width 0.3s;
+  }
+  .module .mini-pct {
+    font-size: 0.75rem;
+    color: #888;
+    width: 38px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    .top-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    body { padding: 8px; }
+    .top-stats { grid-template-columns: 1fr; }
+    .module-grid { grid-template-columns: 1fr; }
+    .stat-card { padding: 12px 14px; }
+    .stat-card .pct { font-size: 1rem; }
+    .lcars-bar { width: 90%; }
+    .lcars-bar .label { font-size: 0.9rem; padding-left: 16px; }
+    .module .mini-bar { width: 60px; }
+    .module .name { font-size: 0.72rem; }
+  }
+
+  .cargo-item {
+    background: #0a0a1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 0 8px 8px 8px;
+    padding: 6px 12px;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cargo-item .name { flex: 1; font-size: 0.8rem; color: #ccc; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .cargo-item .count {
+    font-size: 0.75rem; color: #ff9900; font-weight: 700;
+  }
+
+  .error { color: #dd4444; padding: 20px; }
+  .spinner {
+    display: block; width: 28px; height: 28px;
+    border: 3px solid #2a2a4a; border-top-color: #ff9900;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 60px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 800px) {
+    .top-stats { grid-template-columns: repeat(2, 1fr); }
+    .lcars-bar { width: 90%; }
+  }
+</style>
+</head>
+<body>
+
+<div id="content"></div>
+
+<script>
+async function load() {
+  const el = document.getElementById('content');
+  if (!el.childNodes.length) el.innerHTML = '<span class="spinner"></span>';
+
+  const r = await fetch('api/ship');
+  const d = await r.json();
+  if (!d.ok) { el.innerHTML = `<div class="error">${d.error}</div>`; return; }
+
+  let html = `<div class="lcars-bar"><span class="label">${esc(d.ship)}</span></div>`;
+
+  html += '<div class="top-stats">';
+
+  // Shield — col 1 row 1
+  html += '<div class="stat-card" style="grid-column:1;grid-row:1">';
+  html += '<div class="label">Shield</div>';
+  if (d.shield_health !== null) {
+    const pct = (d.shield_health * 100).toFixed(0);
+    html += `<div class="pct">${pct}%</div>`;
+    html += `<div class="bar-track"><div class="bar-fill bar-shield" style="width:${pct}%"></div></div>`;
+  } else if (d.shield_gen) {
+    const pct = (d.shield_gen_health * 100).toFixed(0);
+    html += `<div class="pct">${pct}%</div>`;
+    html += `<div class="bar-track"><div class="bar-fill bar-shield" style="width:${pct}%"></div></div>`;
+  } else {
+    html += '<div class="pct" style="color:#555">--</div>';
+    html += '<div class="bar-track"><div class="bar-fill bar-shield" style="width:0%"></div></div>';
+  }
+  html += '</div>';
+
+  // Hull — col 1 row 2
+  if (d.hull_health !== null) {
+    const pct = (d.hull_health * 100).toFixed(0);
+    html += '<div class="stat-card" style="grid-column:1;grid-row:2">';
+    html += '<div class="label">Hull</div>';
+    html += `<div class="pct">${pct}%</div>`;
+    html += `<div class="bar-track"><div class="bar-fill bar-hull" style="width:${pct}%"></div></div>`;
+    html += '</div>';
+  }
+
+  // Cargo — col 2 rows 1-2
+  html += '<div class="stat-card" style="grid-column:2;grid-row:1/span 2;display:flex;flex-direction:column;overflow:hidden">';
+  html += '<div class="label">Cargo</div>';
+  html += `<div class="pct">${d.cargo_current} / ${d.cargo_capacity}</div>`;
+  if (d.cargo_capacity > 0) {
+    const pct = (d.cargo_current / d.cargo_capacity * 100).toFixed(1);
+    html += `<div class="bar-track" style="margin-bottom:6px;flex-shrink:0"><div class="bar-fill bar-hull" style="width:${pct}%"></div></div>`;
+  } else {
+    html += '<div class="bar-track" style="margin-bottom:6px;flex-shrink:0"><div class="bar-fill bar-hull" style="width:0%"></div></div>';
+  }
+  if (d.cargo_value !== null) {
+    html += `<div style="margin-bottom:6px;flex-shrink:0"><span style="color:#00bbcc;font-size:0.8rem;font-weight:700">${fmtCr(d.cargo_value)}</span></div>`;
+  }
+  if (d.cargo_items && d.cargo_items.length) {
+    html += '<div style="overflow-y:auto;flex:1;min-height:0">';
+    for (const ci of d.cargo_items) {
+      const label = ci.stolen ? `${esc(ci.name)} (stolen)` : esc(ci.name);
+      const total = ci.price !== null && ci.price !== undefined && ci.price > 0 ? fmtCr(ci.price * ci.count) : '';
+      html += `<div class="cargo-item"><span class="name">${label}</span>${total ? `<span class="val" style="color:#00bbcc;font-size:0.7rem;font-weight:700;font-family:'Segoe UI',system-ui,sans-serif;margin-right:8px">${total}</span>` : ''}<span class="count">${ci.count}</span></div>`;
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Credits, Ship Value, Rebuy — col 3 rows 1-2
+  html += '<div class="stat-card" style="grid-column:3;grid-row:1/span 2">';
+  html += '<div class="label">Finances</div>';
+  if (d.credits !== null) {
+    html += `<div style="margin-bottom:10px"><span style="color:#888;font-size:0.65rem;letter-spacing:1px;text-transform:uppercase">Credits</span><div style="color:#fff;font-size:1rem;font-weight:700;font-family:'Segoe UI',system-ui,sans-serif">${fmtCr(d.credits)}</div></div>`;
+  }
+  if (d.ship_value !== null) {
+    html += `<div style="margin-bottom:10px"><span style="color:#888;font-size:0.65rem;letter-spacing:1px;text-transform:uppercase">Ship Value</span><div style="color:#fff;font-size:1rem;font-weight:700;font-family:'Segoe UI',system-ui,sans-serif">${fmtCr(d.ship_value)}</div></div>`;
+  }
+  if (d.rebuy !== null) {
+    html += `<div><span style="color:#888;font-size:0.65rem;letter-spacing:1px;text-transform:uppercase">Rebuy</span><div style="color:#dd4444;font-size:1rem;font-weight:700;font-family:'Segoe UI',system-ui,sans-serif">${fmtCr(d.rebuy)}</div></div>`;
+  }
+  html += '</div>';
+
+  // col 4 — reserved for future use
+  html += '<div class="stat-card" style="grid-column:4;grid-row:1/span 2;border-color:#1a1a2e"><div class="label" style="color:#333">--</div></div>';
+
+  html += '</div>';
+
+  function catHtml(cat) {
+    const items = d.modules.filter(m => m.category === cat);
+    if (!items.length) return '';
+    const labels = { hardpoints: 'Hardpoints', utility: 'Utility Mounts', core: 'Core Internal', optional: 'Optional Internal', other: 'Other' };
+    let h = `<div class="cat-header">${labels[cat] || cat}</div>`;
+    for (const m of items) {
+      const pct = (m.health * 100).toFixed(0);
+      const rating = m.rating ? ` (${esc(m.rating)})` : '';
+      h += `<div class="module">
+        <span class="name">${esc(m.name)}${rating}</span>
+        <span class="mini-bar"><span class="mini-fill" style="width:${pct}%"></span></span>
+        <span class="mini-pct">${pct}%</span>
+      </div>`;
+    }
+    return h;
+  }
+
+  html += '<div class="module-grid">';
+  html += '<div class="module-col">' + catHtml('hardpoints') + catHtml('core') + '</div>';
+  html += '<div class="module-col">' + catHtml('utility') + catHtml('optional') + '</div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function fmtCr(n) {
+  if (n === null || n === undefined) return '--';
+  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' Cr';
+}
+
+load();
+setInterval(load, 500);
+</script>
+</body>
+</html>

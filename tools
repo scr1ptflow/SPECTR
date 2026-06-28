@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+VENV="$DIR/.venv"
+PYTHON="$VENV/bin/python3"
+
+TOOLS=(
+  "blackbox:Black Box flight recorder"
+  "lrs:Long Range Sensor — nearby services"
+  "web:Web UI server (cockpit + blackbox + ship + missions)"
+  "ship:Ship status — hull, shields, module health"
+  "missions:Mission monitor — active, failed, completed"
+)
+
+ensure_venv() {
+  if [ ! -d "$VENV" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv "$VENV"
+  fi
+}
+
+ensure_deps() {
+  if ! "$PYTHON" -c "import watchdog" 2>/dev/null; then
+    echo "Installing watchdog..."
+    "$VENV/bin/pip" install "watchdog>=4.0.0" --quiet
+  fi
+  if ! "$PYTHON" -c "import uvicorn" 2>/dev/null; then
+    echo "Installing uvicorn..."
+    "$VENV/bin/pip" install "uvicorn>=0.29.0" --quiet
+  fi
+}
+
+check_config() {
+  if [ ! -f "$DIR/config.json" ]; then
+    echo ""
+    echo "Config not found. Enter your Elite Dangerous journal directory path."
+    echo "Typically: ~/.steam/steam/steamapps/compatdata/359320/pfx/..."
+    printf "Journal path: "
+    read -r JRNL_PATH
+    if [ -z "$JRNL_PATH" ]; then
+      echo "Path cannot be empty."
+      exit 1
+    fi
+
+    echo ""
+    echo "Optional: Inara API key (press Enter to skip)."
+    printf "Inara API key: "
+    read -r INARA_KEY
+
+    echo ""
+    echo "Optional: EDSM API key (press Enter to skip)."
+    printf "EDSM API key: "
+    read -r EDSM_KEY
+
+    cat > /tmp/spectr_setup.py <<PYEOF
+import json, os
+cfg = {'journal_path': os.environ['JRNL_PATH']}
+if os.environ.get('INARA_KEY'):
+    cfg['inara'] = {'api_key': os.environ['INARA_KEY'], 'api_url': 'https://api.inara.cz/v1/'}
+if os.environ.get('EDSM_KEY'):
+    cfg['edsm'] = {'api_key': os.environ['EDSM_KEY'], 'api_url': 'https://www.edsm.net/api/'}
+with open('$DIR/config.json', 'w') as f:
+    json.dump(cfg, f, indent=2)
+PYEOF
+    JRNL_PATH="$JRNL_PATH" INARA_KEY="$INARA_KEY" EDSM_KEY="$EDSM_KEY" "$PYTHON" /tmp/spectr_setup.py
+    rm -f /tmp/spectr_setup.py
+    echo "Config saved to config.json"
+  fi
+}
+
+show_menu() {
+  echo "SPECTR — Elite Dangerous Tool Suite"
+  echo ""
+  for i in "${!TOOLS[@]}"; do
+    name="${TOOLS[$i]%%:*}"
+    desc="${TOOLS[$i]#*:}"
+    echo "  $((i+1))) $name — $desc"
+  done
+  echo "  q) Quit"
+  echo ""
+}
+
+if [ $# -gt 0 ]; then
+  ensure_venv
+  ensure_deps
+  check_config
+  TOOL="$1"
+  shift
+  case "$TOOL" in
+    blackbox) exec "$PYTHON" -m blackbox "$@" ;;
+    lrs)      exec "$PYTHON" -m long_range_sensor "$@" ;;
+    web)      exec "$VENV/bin/uvicorn" webui.server:app --host 0.0.0.0 --port 8000 "$@" ;;
+    ship)     exec "$PYTHON" -m ship_status "$@" ;;
+    missions) exec "$PYTHON" -m missions "$@" ;;
+    *)
+      echo "Unknown tool: $TOOL"
+      echo "Available: blackbox, lrs, web, ship, missions"
+      exit 1
+      ;;
+  esac
+fi
+
+ensure_venv
+ensure_deps
+check_config
+
+while true; do
+  show_menu
+  read -rp "Select tool: " choice
+  case "$choice" in
+    q|Q) echo "Bye."; exit 0 ;;
+    1)   exec "$PYTHON" -m blackbox ;;
+    2)   exec "$PYTHON" -m long_range_sensor ;;
+    3)   exec "$VENV/bin/uvicorn" webui.server:app --host 0.0.0.0 --port 8000 ;;
+     4)   exec "$PYTHON" -m ship_status ;;
+     5)   exec "$PYTHON" -m missions ;;
+     *)   echo "Invalid choice"; echo ;;
+  esac
+done

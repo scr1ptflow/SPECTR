@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — Flight Recorder</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #ccc;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  .lcars-bar {
+    background: #ff9900;
+    height: 32px;
+    border-radius: 0 16px 16px 0;
+    margin: 0 0 20px;
+    display: flex; align-items: center;
+    width: 60%;
+  }
+  .lcars-bar .label {
+    color: #000;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    padding-left: 24px;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .date-display {
+    color: #ff9900;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+  .day-group {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+  .day-btn {
+    padding: 5px 12px;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid #2a2a4a;
+    border-radius: 0 8px 8px 8px;
+    cursor: pointer;
+    color: #666;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .day-btn:hover { color: #fff; border-color: #555; }
+  .day-btn.active { color: #000; border-color: #ff9900; background: #ff9900; }
+  .day-btn.all {
+    border-color: #00bbcc;
+    color: #00bbcc;
+  }
+  .day-btn.all:hover { color: #fff; border-color: #00bbcc; background: #00bbcc; }
+  .day-btn.all.active { color: #000; background: #00bbcc; border-color: #00bbcc; }
+
+  .btn {
+    padding: 8px 20px;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0 10px 10px 10px;
+    cursor: pointer;
+    color: #000;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn.export { background: #00bbcc; }
+
+  .entry {
+    display: flex;
+    align-items: stretch;
+    min-height: 30px;
+    margin-bottom: 1px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .entry .indicator {
+    width: 4px;
+    flex-shrink: 0;
+    border-radius: 0 2px 2px 0;
+    margin-right: 10px;
+  }
+  .entry .time-col {
+    width: 82px;
+    flex-shrink: 0;
+    color: #555;
+    font-size: 0.72rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    padding-top: 6px;
+  }
+  .entry .body {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #0f0f1a;
+    min-width: 0;
+  }
+  .entry .badge {
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1px 7px;
+    border-radius: 0 5px 5px 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .entry .text {
+    color: #aaa;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding-top: 1px;
+  }
+
+  .ind-nav   { background: #00bbcc; }
+  .ind-land  { background: #44aa66; }
+  .ind-combat{ background: #dd4444; }
+  .ind-trade { background: #cc8844; }
+  .ind-mat   { background: #8844aa; }
+  .ind-mission{background: #ff9900; }
+  .ind-ship  { background: #4488cc; }
+  .ind-explore{background: #55bb88; }
+  .ind-crew  { background: #aa66cc; }
+  .ind-cargo { background: #cc8844; }
+  .ind-engineer{background: #44aacc; }
+  .ind-other { background: #555; }
+
+  .badge-nav   { background: #00bbcc; color: #000; }
+  .badge-land  { background: #44aa66; color: #000; }
+  .badge-combat{ background: #dd4444; color: #000; }
+  .badge-trade { background: #cc8844; color: #000; }
+  .badge-mat   { background: #8844aa; color: #fff; }
+  .badge-mission{background: #ff9900; color: #000; }
+  .badge-ship  { background: #4488cc; color: #000; }
+  .badge-explore{background: #55bb88; color: #000; }
+  .badge-crew  { background: #aa66cc; color: #000; }
+  .badge-cargo { background: #cc8844; color: #000; }
+  .badge-engineer{background: #44aacc; color: #000; }
+  .badge-other { background: #555; color: #fff; }
+
+  .empty { color: #555; text-align: center; padding: 40px 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .error { color: #dd4444; padding: 12px 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #ff9900; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 40px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .count {
+    color: #555;
+    font-size: 0.7rem;
+    margin-bottom: 12px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 10px; }
+    .lcars-bar { width: 90%; }
+    .lcars-bar .label { font-size: 0.9rem; padding-left: 16px; }
+    .top-row { flex-direction: column; align-items: stretch; gap: 6px; }
+    .day-group { justify-content: center; }
+    .day-btn { padding: 4px 10px; font-size: 0.55rem; }
+    .entry .time-col { width: 60px; font-size: 0.65rem; }
+    .entry .badge { font-size: 0.5rem; padding: 1px 5px; }
+    .entry .text { font-size: 0.72rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lcars-bar"><span class="label">Flight Recorder</span></div>
+
+<div class="top-row">
+  <span class="date-display" id="date-display"></span>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div class="day-group" id="day-buttons"></div>
+    <button class="btn export" onclick="exportCSV()">Export CSV</button>
+  </div>
+</div>
+
+<div class="count" id="event-count"></div>
+<div id="timeline"></div>
+
+<script>
+const CATEGORY = {
+  FSDJump: 'nav', StartJump: 'nav', SupercruiseEntry: 'nav', SupercruiseExit: 'nav',
+  Docked: 'nav', Undocked: 'nav', DockingGranted: 'nav',
+  Touchdown: 'land', Liftoff: 'land', ApproachBody: 'land', LeaveBody: 'land',
+  Bounty: 'combat', Died: 'combat', Resurrect: 'combat',
+  MarketBuy: 'trade', MarketSell: 'trade', BuyTradeData: 'trade',
+  MaterialCollected: 'mat', MaterialDiscarded: 'mat', MaterialDiscovered: 'mat',
+  MaterialTrade: 'mat', MiningRefined: 'mat',
+  MissionAccepted: 'mission', MissionCompleted: 'mission',
+  LoadGame: 'ship', ModuleBuy: 'ship', ModuleSell: 'ship', ModuleStore: 'ship',
+  Repair: 'ship', Refuel: 'ship', BuyAmmo: 'ship', FuelScoop: 'ship',
+  SetUserShipName: 'ship', VehicleSwitch: 'ship',
+  Scan: 'explore', SAAScanComplete: 'explore', CodexEntry: 'explore',
+  SellExplorationData: 'explore', MultiSellExplorationData: 'explore',
+  BuyExplorationData: 'explore',
+  CrewMemberJoins: 'crew', CrewMemberRoleChange: 'crew', CrewMemberQuits: 'crew',
+  CollectCargo: 'cargo', EjectCargo: 'cargo', LaunchDrone: 'cargo',
+  EngineerCraft: 'engineer',
+};
+
+const CAT_LABEL = { nav: 'Nav', land: 'Land', combat: 'Combat', trade: 'Trade', mat: 'Mat', mission: 'Mission', ship: 'Ship', explore: 'Explore', crew: 'Crew', cargo: 'Cargo', engineer: 'Eng' };
+
+let activeDayFilter = 'today';
+
+function toUGT(d) {
+  const y = d.getUTCFullYear() + 1286;
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function todayUGT() {
+  return toUGT(new Date());
+}
+
+function getWeekDays() {
+  const now = new Date();
+  const dow = now.getDay();
+  const monOffset = dow === 0 ? -6 : 1 - dow;
+  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return names.map((name, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() + monOffset + i);
+    return { date: toUGT(d), label: name };
+  });
+}
+
+function buildDayButtons() {
+  const container = document.getElementById('day-buttons');
+  const week = getWeekDays();
+  const today = todayUGT();
+  for (const wd of week) {
+    const btn = document.createElement('button');
+    btn.className = 'day-btn';
+    if (wd.date === today) btn.classList.add('active');
+    btn.dataset.date = wd.date;
+    btn.textContent = wd.label;
+    container.appendChild(btn);
+  }
+  const allBtn = document.createElement('button');
+  allBtn.className = 'day-btn all';
+  allBtn.dataset.date = 'all';
+  allBtn.textContent = 'All';
+  container.appendChild(allBtn);
+
+  container.addEventListener('click', e => {
+    const btn = e.target.closest('.day-btn');
+    if (!btn) return;
+    container.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeDayFilter = btn.dataset.date;
+    load();
+  });
+}
+
+async function load() {
+  const r = await fetch('api/log?limit=500');
+  const res = await r.json();
+  if (!res.ok) { document.getElementById('timeline').innerHTML = `<div class="error">${res.error}</div>`; return; }
+
+  const el = document.getElementById('timeline');
+  const countEl = document.getElementById('event-count');
+  let entries = res.entries || [];
+
+  if (activeDayFilter !== 'all') {
+    entries = entries.filter(e => e.date === activeDayFilter);
+  }
+
+  countEl.textContent = `${entries.length} events`;
+
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty">No events for this period</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(e => {
+    const cat = CATEGORY[e.event] || 'other';
+    const text = esc(e.formatted || e.event);
+    return `<div class="entry">
+      <span class="indicator ind-${cat}"></span>
+      <span class="time-col">${esc(e.time)}</span>
+      <div class="body">
+        <span class="badge badge-${cat}">${CAT_LABEL[cat] || '?'}</span>
+        <span class="text">${text}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function exportCSV() {
+  const r = await fetch('api/log?limit=10000');
+  const res = await r.json();
+  if (!res.ok) return;
+  const entries = res.entries || [];
+  let csv = 'timestamp,date,time,event,description\n';
+  for (const e of entries) {
+    const desc = (e.formatted || '').replace(/"/g, '""');
+    csv += `${e.timestamp},${e.date},${e.time},"${e.event}","${desc}"\n`;
+  }
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const suffix = activeDayFilter === 'all' ? 'all' : todayUGT();
+  a.download = `blackbox-${suffix}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+(async function init() {
+  buildDayButtons();
+  load();
+})();
+
+setInterval(load, 5000);
+</script>
+<script src="/static/shared.js"></script>
+</body>
+</html>

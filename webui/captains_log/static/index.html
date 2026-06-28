@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — Captain's Log</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #ccc;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .lcars-bar {
+    background: #ff9900;
+    height: 32px;
+    border-radius: 0 16px 16px 0;
+    margin: 0 0 20px;
+    display: flex; align-items: center;
+    width: 60%;
+  }
+  .lcars-bar .label {
+    color: #000;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    padding-left: 24px;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .top-row label {
+    color: #555;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .top-row input[type="date"] {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 0 8px 8px 8px;
+    color: #ccc;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+  .top-row input[type="date"]:focus { outline: none; border-color: #ff9900; }
+  .top-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+  .btn {
+    padding: 8px 20px;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0 10px 10px 10px;
+    cursor: pointer;
+    color: #000;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn.today { background: #ff9900; }
+  .btn.clear { background: #555; }
+
+  .layout {
+    display: flex;
+    gap: 20px;
+    min-height: 70vh;
+  }
+
+  .sidebar {
+    width: 140px;
+    flex-shrink: 0;
+    border-right: 1px solid #1a1a2a;
+    padding-right: 12px;
+  }
+  .sidebar .date-item {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #666;
+    cursor: pointer;
+    border-radius: 0 6px 6px 6px;
+    transition: all 0.1s;
+    letter-spacing: 1px;
+  }
+  .sidebar .date-item:hover { color: #fff; background: #0a0a14; }
+  .sidebar .date-item.active {
+    color: #000;
+    background: #ff9900;
+    font-weight: 700;
+  }
+  .sidebar .sidebar-label {
+    color: #444;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .day-header {
+    font-size: 1.1rem;
+    color: #ff9900;
+    letter-spacing: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ff990020;
+    margin-bottom: 12px;
+  }
+  .day-header .count {
+    color: #555;
+    font-size: 0.7rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    letter-spacing: 0;
+    margin-left: 10px;
+  }
+
+  .entry {
+    display: flex;
+    align-items: stretch;
+    min-height: 30px;
+    margin-bottom: 1px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .entry .indicator {
+    width: 4px;
+    flex-shrink: 0;
+    border-radius: 0 2px 2px 0;
+    margin-right: 10px;
+  }
+  .entry .time-col {
+    width: 82px;
+    flex-shrink: 0;
+    color: #555;
+    font-size: 0.72rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    padding-top: 6px;
+  }
+  .entry .body {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #0f0f1a;
+    min-width: 0;
+  }
+  .entry .badge {
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1px 7px;
+    border-radius: 0 5px 5px 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .entry .text {
+    color: #aaa;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding-top: 1px;
+  }
+
+  .ind-nav   { background: #00bbcc; }
+  .ind-land  { background: #44aa66; }
+  .ind-combat{ background: #dd4444; }
+  .ind-trade { background: #cc8844; }
+  .ind-mat   { background: #8844aa; }
+  .ind-mission{background: #ff9900; }
+  .ind-ship  { background: #4488cc; }
+  .ind-explore{background: #55bb88; }
+  .ind-crew  { background: #aa66cc; }
+  .ind-cargo { background: #cc8844; }
+  .ind-engineer{background: #44aacc; }
+  .ind-onfoot{ background: #aa88cc; }
+  .ind-other { background: #555; }
+
+  .badge-nav   { background: #00bbcc; color: #000; }
+  .badge-land  { background: #44aa66; color: #000; }
+  .badge-combat{ background: #dd4444; color: #000; }
+  .badge-trade { background: #cc8844; color: #000; }
+  .badge-mat   { background: #8844aa; color: #fff; }
+  .badge-mission{background: #ff9900; color: #000; }
+  .badge-ship  { background: #4488cc; color: #000; }
+  .badge-explore{background: #55bb88; color: #000; }
+  .badge-crew  { background: #aa66cc; color: #000; }
+  .badge-cargo { background: #cc8844; color: #000; }
+  .badge-engineer{background: #44aacc; color: #000; }
+  .badge-onfoot{ background: #aa88cc; color: #000; }
+  .badge-other { background: #555; color: #fff; }
+
+  .empty { color: #555; text-align: center; padding: 40px 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #ff9900; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 40px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .count {
+    color: #555;
+    font-size: 0.7rem;
+    margin-bottom: 12px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .no-date-selected {
+    color: #444;
+    text-align: center;
+    padding: 80px 20px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+  .no-date-selected .hint {
+    color: #666;
+    font-size: 0.75rem;
+  }
+
+  .spacer { flex: 1; }
+  .flex-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 700px) {
+    body { padding: 10px; }
+    .lcars-bar { width: 90%; }
+    .lcars-bar .label { font-size: 0.9rem; padding-left: 16px; }
+    .top-row { flex-direction: column; align-items: stretch; }
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1a1a2a; padding-right: 0; padding-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .sidebar .date-item { display: inline-block; font-size: 0.6rem; padding: 4px 8px; }
+    .sidebar .sidebar-label { width: 100%; }
+    .entry .time-col { width: 60px; font-size: 0.65rem; }
+    .entry .badge { font-size: 0.5rem; padding: 1px 5px; }
+    .entry .text { font-size: 0.72rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lcars-bar"><span class="label">Captain's Log</span></div>
+
+<div class="top-row">
+  <span class="date-display" id="date-display" style="color:#ff9900;font-size:0.85rem;letter-spacing:2px;"></span>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <label for="date-picker">Date</label>
+    <input type="date" id="date-picker">
+    <button class="btn today" id="btn-today">Today</button>
+    <button class="btn clear" id="btn-all">All</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-label">Days</div>
+  </div>
+  <div class="content">
+    <div class="count" id="event-count"></div>
+    <div id="content">
+      <div class="no-date-selected">
+        <div>Select a day from the sidebar<br>or pick a date above.</div>
+        <div class="hint">The Captain's Log shows every event recorded<br>by the flight recorder in full detail.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORY = {
+  FSDJump: 'nav', StartJump: 'nav', SupercruiseEntry: 'nav', SupercruiseExit: 'nav',
+  Docked: 'nav', Undocked: 'nav', DockingGranted: 'nav',
+  Touchdown: 'land', Liftoff: 'land', ApproachBody: 'land', LeaveBody: 'land',
+  Bounty: 'combat', Died: 'combat', Resurrect: 'combat', RedeemVoucher: 'combat',
+  MarketBuy: 'trade', MarketSell: 'trade', BuyTradeData: 'trade',
+  MaterialCollected: 'mat', MaterialDiscarded: 'mat', MaterialDiscovered: 'mat',
+  MaterialTrade: 'mat', MiningRefined: 'mat',
+  MissionAccepted: 'mission', MissionCompleted: 'mission',
+  LoadGame: 'ship', ModuleBuy: 'ship', ModuleSell: 'ship', ModuleStore: 'ship',
+  Repair: 'ship', Refuel: 'ship', BuyAmmo: 'ship', FuelScoop: 'ship',
+  SetUserShipName: 'ship', VehicleSwitch: 'ship',
+  Scan: 'explore', SAAScanComplete: 'explore', CodexEntry: 'explore',
+  SellExplorationData: 'explore', MultiSellExplorationData: 'explore',
+  BuyExplorationData: 'explore',
+  CrewMemberJoins: 'crew', CrewMemberRoleChange: 'crew', CrewMemberQuits: 'crew',
+  CollectCargo: 'cargo', EjectCargo: 'cargo', LaunchDrone: 'cargo',
+  EngineerCraft: 'engineer',
+  ReceiveText: 'onfoot', ScanOrganic: 'onfoot', SellOrganicData: 'onfoot',
+  BuyOrganicData: 'onfoot', BackpackChange: 'onfoot', CollectItems: 'onfoot',
+  UseConsumable: 'onfoot', BuySuit: 'onfoot', UpgradeSuit: 'onfoot',
+  SellSuit: 'onfoot', SwitchSuitLoadout: 'onfoot', CreateSuitLoadout: 'onfoot',
+  DeleteSuitLoadout: 'onfoot', ShipLocker: 'onfoot',
+  CarrierJump: 'nav', CarrierBuy: 'ship', CarrierFinance: 'ship',
+  Location: 'nav',
+};
+
+const CAT_LABEL = { nav: 'Nav', land: 'Land', combat: 'Combat', trade: 'Trade', mat: 'Mat', mission: 'Mission', ship: 'Ship', explore: 'Explore', crew: 'Crew', cargo: 'Cargo', engineer: 'Eng', onfoot: 'On Foot' };
+
+const FMT_DATE = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+function toUGT(d) {
+  const y = d.getUTCFullYear() + 1286;
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function todayUGT() {
+  return toUGT(new Date());
+}
+
+function fmtDisplay(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y - 1286, m - 1, d));
+  return FMT_DATE.format(dt);
+}
+
+let allDays = [];
+let allDates = [];
+let selectedDate = null;
+
+async function loadDays() {
+  const r = await fetch('api/captains-log');
+  const res = await r.json();
+  if (!res.ok) return;
+  allDays = res.days || [];
+  allDates = res.all_dates || [];
+  renderSidebar();
+  if (selectedDate && allDates.includes(selectedDate)) {
+    renderContent(selectedDate);
+  } else if (selectedDate === 'all') {
+    renderContent('all');
+  } else {
+    selectDefault();
+  }
+}
+
+function selectDefault() {
+  const today = todayUGT();
+  if (allDates.includes(today)) {
+    selectedDate = today;
+    document.getElementById('date-picker').value = today;
+  } else if (allDates.length) {
+    selectedDate = allDates[0];
+    document.getElementById('date-picker').value = selectedDate;
+  } else {
+    selectedDate = null;
+  }
+  renderSidebar();
+  renderContent(selectedDate);
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  const label = el.querySelector('.sidebar-label');
+  el.innerHTML = '';
+  el.appendChild(label);
+  if (!allDates.length) {
+    const empty = document.createElement('div');
+    empty.className = 'date-item';
+    empty.textContent = 'No entries';
+    empty.style.color = '#444';
+    el.appendChild(empty);
+    return;
+  }
+  for (const d of allDates) {
+    const item = document.createElement('div');
+    item.className = 'date-item' + (d === selectedDate ? ' active' : '');
+    item.textContent = fmtDisplay(d);
+    item.style.fontSize = '0.65rem';
+    item.addEventListener('click', () => {
+      selectedDate = d;
+      document.getElementById('date-picker').value = d;
+      renderSidebar();
+      renderContent(d);
+    });
+    el.appendChild(item);
+  }
+}
+
+function renderContent(dateFilter) {
+  const el = document.getElementById('content');
+  const countEl = document.getElementById('event-count');
+
+  if (!dateFilter) {
+    el.innerHTML = '<div class="no-date-selected"><div>Select a day to view the log.</div></div>';
+    countEl.textContent = '';
+    return;
+  }
+
+  let days = allDays;
+  if (dateFilter !== 'all') {
+    days = allDays.filter(d => d.date === dateFilter);
+  }
+
+  if (!days.length) {
+    el.innerHTML = '<div class="empty">No events for this period</div>';
+    countEl.textContent = '0 events';
+    return;
+  }
+
+  let totalEvents = 0;
+  let html = '';
+  for (const day of days) {
+    totalEvents += day.events.length;
+    html += `<div class="day-header">${esc(fmtDisplay(day.date))} <span class="count">${day.events.length} events</span></div>`;
+    for (const ev of day.events) {
+      const cat = CATEGORY[ev.event] || 'other';
+      const text = esc(ev.formatted || ev.event);
+      html += `<div class="entry">
+        <span class="indicator ind-${cat}"></span>
+        <span class="time-col">${esc(ev.time)}</span>
+        <div class="body">
+          <span class="badge badge-${cat}">${CAT_LABEL[cat] || '?'}</span>
+          <span class="text">${text}</span>
+        </div>
+      </div>`;
+    }
+  }
+  countEl.textContent = `${totalEvents} events`;
+  el.innerHTML = html;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+document.getElementById('date-picker').addEventListener('change', e => {
+  const val = e.target.value;
+  if (val) {
+    selectedDate = val;
+    renderSidebar();
+    renderContent(val);
+  }
+});
+
+document.getElementById('btn-today').addEventListener('click', () => {
+  const today = todayUGT();
+  document.getElementById('date-picker').value = today;
+  selectedDate = today;
+  renderSidebar();
+  renderContent(today);
+});
+
+document.getElementById('btn-all').addEventListener('click', () => {
+  document.getElementById('date-picker').value = '';
+  selectedDate = 'all';
+  renderSidebar();
+  renderContent('all');
+});
+
+(async function init() {
+  document.getElementById('date-display').textContent = todayUGT();
+  await loadDays();
+})();
+</script>
+</body>
+</html>
