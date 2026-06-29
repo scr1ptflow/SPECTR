@@ -63,6 +63,19 @@ if not "%~1"=="" (
 
 :menu
 cls
+setlocal DISABLEDELAYEDEXPANSION
+echo @@@@@@   @@@@@@@   @@@@@@@@   @@@@@@@  @@@@@@@  @@@@@@@
+echo @@@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@  @@@@@@@@
+echo !@@       @@!  @@@  @@!       !@@         @@!    @@!  @@@
+echo !@!       !@!  @!@  !@!       !@!         !@!    !@!  @!@
+echo !!@@!!    @!@@!@!   @!!!:!    !@!         @!!    @!@!!@!
+echo  !!@!!!   !!@!!!    !!!!!:    !!!         !!!    !!@!@!
+echo      !:!  !!:       !!:       :!!         !!:    !!: :!!
+echo     !:!   :!:       :!:       :!:         :!:    :!:  !:!
+echo :::: ::    ::        :: ::::   ::: :::     ::    ::   :::
+echo :: : :     :        : :: ::    :: :: :     :      :   : :
+endlocal
+echo(
 echo SPECTR — Elite Dangerous Tool Suite
 echo(
 echo   1) blackbox — Black Box flight recorder
