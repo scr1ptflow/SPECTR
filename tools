@@ -20,18 +20,7 @@ ensure_venv() {
 }
 
 ensure_deps() {
-  if ! "$PYTHON" -c "import watchdog" 2>/dev/null; then
-    echo "Installing watchdog..."
-    "$VENV/bin/pip" install "watchdog>=4.0.0" --quiet
-  fi
-  if ! "$PYTHON" -c "import uvicorn" 2>/dev/null; then
-    echo "Installing uvicorn..."
-    "$VENV/bin/pip" install "uvicorn>=0.29.0" --quiet
-  fi
-  if ! "$PYTHON" -c "import fastapi" 2>/dev/null; then
-    echo "Installing fastapi..."
-    "$VENV/bin/pip" install "fastapi>=0.100.0" --quiet
-  fi
+  "$VENV/bin/pip" install --quiet -e .
 }
 
 check_config() {

@@ -11,7 +11,7 @@ Python CLI tools for Elite Dangerous, sharing a venv and config.
 - **Package:** `spectr-blackbox` v0.1.0
 - **Launcher:** `./tools` creates venv, installs deps, dispatches to tools
 - **Config:** `config.json` — journal path, optional Inara/EDSM API keys. Generated on first run via interactive prompts in `tools`/`tools.bat`.
-- **Python:** >=3.10, dependencies: `watchdog>=4.0.0`
+- **Python:** >=3.10, dependencies in `pyproject.toml` (`watchdog`, `fastapi`, `uvicorn`). Installed via `pip install -e .` in `ensure_deps()`.
 
 ## Structure
 
