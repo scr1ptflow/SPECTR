@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPECTR — Flight Recorder</title>
+<script src="/static/shared.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -226,17 +227,6 @@ const CAT_LABEL = { nav: 'Nav', land: 'Land', combat: 'Combat', trade: 'Trade', 
 
 let activeDayFilter = 'today';
 
-function toUGT(d) {
-  const y = d.getUTCFullYear() + 1286;
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function todayUGT() {
-  return toUGT(new Date());
-}
-
 function getWeekDays() {
   const now = new Date();
   const dow = now.getDay();
@@ -331,12 +321,6 @@ async function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
 (async function init() {
   buildDayButtons();
   load();
@@ -344,6 +328,5 @@ function esc(s) {
 
 setInterval(load, 5000);
 </script>
-<script src="/static/shared.js"></script>
 </body>
 </html>

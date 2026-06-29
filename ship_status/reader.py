@@ -3,6 +3,9 @@ import os
 import glob
 import re
 
+from blackbox.formatter import print_progress
+from webui._utils import find_journal_dir, get_latest_journal
+
 _COMMODITY_PRICES = {
     # Minerals
     "painite": 520000, "platinum": 230000, "osmium": 65000,
@@ -237,29 +240,7 @@ def _slot_sort_key(slot: str) -> tuple:
 
 
 def read_journal_dir(config_path: str | None = None) -> str | None:
-    if config_path and os.path.exists(config_path):
-        with open(config_path) as f:
-            cfg = json.load(f)
-        path = cfg.get("journal_path", "")
-        if path and os.path.isdir(path):
-            return path
-    env = os.environ.get("ED_JOURNAL_DIR", "")
-    if env and os.path.isdir(env):
-        return env
-    candidates = [
-        os.path.join(os.path.expanduser("~"), ".steam", "steam", "steamapps", "compatdata", "359320", "pfx", "drive_c", "users", "steamuser", "Saved Games", "Frontier Developments", "Elite Dangerous"),
-        os.path.join(os.path.expanduser("~"), ".local", "share", "Steam", "steamapps", "compatdata", "359320", "pfx", "drive_c", "users", "steamuser", "Saved Games", "Frontier Developments", "Elite Dangerous"),
-    ]
-    for c in candidates:
-        if os.path.isdir(c) and glob.glob(os.path.join(c, "Journal.*.log")):
-            return c
-    return None
-
-
-def get_latest_journal(journal_dir: str) -> str | None:
-    pattern = os.path.join(journal_dir, "Journal.*.log")
-    files = sorted(glob.glob(pattern), reverse=True)
-    return files[0] if files else None
+    return find_journal_dir(config_path)
 
 
 def find_last_loadout(journal_file: str) -> dict | None:
@@ -304,10 +285,11 @@ def _ship_name(loadout: dict) -> str:
 
 
 def find_last_cargo(journal_dir: str) -> list | None:
-    pattern = os.path.join(journal_dir, "Journal.*.log")
-    files = sorted(glob.glob(pattern), reverse=True)
+    files = sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log")), reverse=True)
+    total = len(files)
     result = None
-    for jf in files:
+    for i, jf in enumerate(files, 1):
+        print_progress(i, total, suffix="files (cargo)")
         with open(jf, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -325,9 +307,10 @@ def find_last_cargo(journal_dir: str) -> list | None:
 
 
 def find_current_economy(journal_dir: str) -> str | None:
-    pattern = os.path.join(journal_dir, "Journal.*.log")
-    files = sorted(glob.glob(pattern), reverse=True)
-    for jf in files:
+    files = sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log")), reverse=True)
+    total = len(files)
+    for i, jf in enumerate(files, 1):
+        print_progress(i, total, suffix="files (economy)")
         with open(jf, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -341,7 +324,9 @@ def find_current_economy(journal_dir: str) -> str | None:
                 if event in ("Location", "FSDJump"):
                     economy = ev.get("SystemEconomy_Localised") or ev.get("SystemEconomy", "")
                     if economy:
+                        print_progress(total, total, suffix="files (economy)")
                         return economy
+    print_progress(total, total, suffix="files (economy)")
     return None
 
 

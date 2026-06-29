@@ -2,8 +2,6 @@
 
 import json
 import logging
-import os
-import sys
 import time
 from pathlib import Path
 
@@ -11,6 +9,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from .store import Store
+from .formatter import print_progress
 
 logger = logging.getLogger(__name__)
 
@@ -28,18 +27,16 @@ class Recorder:
 
     def catch_up(self):
         """Read all existing journal files."""
-        files = sorted(self.journal_dir.glob("Journal.*.log"), key=os.path.getmtime)
+        files = sorted(self.journal_dir.glob("Journal.*.log"), key=lambda p: p.stat().st_mtime)
         total = len(files)
         for i, jf in enumerate(files, 1):
-            name = jf.name
-            sys.stderr.write(f"\r  [{i}/{total}] {name}...")
-            sys.stderr.flush()
             before = self.store.get_stats()["events"]
-            self._read_journal(str(jf))
+            self._read_journal(jf)
             after = self.store.get_stats()["events"]
-            sys.stderr.write(f"\r  [{i}/{total}] {name}  {after - before} events\n")
+            print_progress(i, total, suffix=f"files · {after - before} events")
         if total:
-            sys.stderr.write(f"\r  Done — {self.store.get_stats()['events']} total events\n")
+            total_events = self.store.get_stats()["events"]
+            print_progress(total, total, suffix=f"files · {total_events} total events")
 
     def watch(self):
         """Start watching for file changes."""
@@ -52,9 +49,10 @@ class Recorder:
         self._observer.stop()
         self._observer.join()
 
-    def _read_journal(self, fname: str):
+    def _read_journal(self, fpath: Path):
+        fname = str(fpath)
         try:
-            size = os.path.getsize(fname)
+            size = fpath.stat().st_size
             byte_pos, line_num = self._positions.get(fname, (0, 1))
         except FileNotFoundError:
             self._positions.pop(fname, None)
@@ -64,7 +62,7 @@ class Recorder:
             return
 
         try:
-            with open(fname, "r", encoding="utf-8") as f:
+            with fpath.open("r", encoding="utf-8") as f:
                 f.seek(byte_pos)
                 for line in f:
                     line = line.rstrip("\n\r")
@@ -110,15 +108,15 @@ class _JournalEventHandler(FileSystemEventHandler):
         return name.startswith("Journal.") and name.endswith(".log")
 
     def on_modified(self, event):
-        path = os.fsdecode(event.src_path)
-        name = os.path.basename(path)
+        path = Path(event.src_path)
+        name = path.name
         if self._is_journal(name):
             self.recorder._read_journal(path)
         elif name == "Status.json":
             self.recorder._read_status()
 
     def on_created(self, event):
-        path = os.fsdecode(event.src_path)
-        name = os.path.basename(path)
+        path = Path(event.src_path)
+        name = path.name
         if self._is_journal(name):
             self.recorder._read_journal(path)

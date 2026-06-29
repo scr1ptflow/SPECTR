@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -9,7 +8,6 @@ from fastapi.staticfiles import StaticFiles
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(DIR))
 
 from webui.cockpit.server import sub_app as cockpit_app
 from webui.blackbox.server import sub_app as blackbox_app

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPECTR Missions</title>
+<script src="/static/shared.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -194,12 +195,6 @@ function fmtTime(sec) {
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
-}
-
-function esc(s) {
-  const e = document.createElement('div');
-  e.textContent = s;
-  return e.innerHTML;
 }
 
 load();

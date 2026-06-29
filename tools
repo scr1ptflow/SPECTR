@@ -88,7 +88,7 @@ show_menu() {
   echo -e ":::: ::    ::        :: ::::   ::: :::     ::    ::   :::"
   echo -e ":: : :     :        : :: ::    :: :: :     :      :   : :"
   echo -e "\033[0m"
-  echo -e "\033[1;33mSPECTR — Elite Dangerous Tool Suite\033[0m"
+  echo -e "\033[1;33mElite Dangerous Tool Suite\033[0m"
   echo ""
   for i in "${!TOOLS[@]}"; do
     name="${TOOLS[$i]%%:*}"
@@ -126,6 +126,7 @@ check_config     # creates config.json if missing
 ensure_db        # populate blackbox.db from journals if absent
 
 while true; do
+  clear
   show_menu
   read -rp "Select tool: " choice
   case "$choice" in

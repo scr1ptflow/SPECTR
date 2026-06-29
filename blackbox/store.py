@@ -22,7 +22,8 @@ def _init_schema(conn):
             raw_json TEXT NOT NULL,
             timestamp TEXT NOT NULL,
             journal_file TEXT NOT NULL,
-            line_number INTEGER NOT NULL
+            line_number INTEGER NOT NULL,
+            UNIQUE(journal_file, line_number)
         )"""
     )
 
@@ -54,7 +55,7 @@ class Store:
         data = json.loads(line)
         system = data.get("StarSystem") or data.get("System") or ""
         self.conn.execute(
-            "INSERT INTO events (event, system, raw_json, timestamp, journal_file, line_number) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO events (event, system, raw_json, timestamp, journal_file, line_number) VALUES (?, ?, ?, ?, ?, ?)",
             (event, system, line, ts, fname, line_num),
         )
         self.conn.commit()

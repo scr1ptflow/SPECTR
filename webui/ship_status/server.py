@@ -1,15 +1,11 @@
 import os
-import sys
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, DIR)
+from ship_status.reader import get_ship_data
+from webui._utils import read_config, find_journal_dir
 
-from ship_status.reader import get_ship_data, read_journal_dir
-
-CONFIG_PATH = os.path.join(DIR, "config.json")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 sub_app = FastAPI(title="SPECTR Ship Status")
@@ -23,7 +19,8 @@ def index():
 
 @sub_app.get("/api/ship")
 def api_ship():
-    journal_dir = read_journal_dir(CONFIG_PATH)
+    config = read_config()
+    journal_dir = config.get("journal_path", "") or find_journal_dir()
     if not journal_dir:
         return {"ok": False, "error": "journal directory not found"}
     data = get_ship_data(journal_dir)

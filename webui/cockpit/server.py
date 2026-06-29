@@ -1,13 +1,9 @@
 import os
-import sys
 
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 
 from long_range_sensor import edsm, checkers
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 from webui._utils import get_system, read_config
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")

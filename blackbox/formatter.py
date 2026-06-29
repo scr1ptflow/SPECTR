@@ -1,6 +1,20 @@
 """Shared event formatting for CLI and webui."""
 
 import re
+import sys
+
+
+def print_progress(current: int, total: int, *, width: int = 20, suffix: str = ""):
+    """Print an ASCII progress bar to stderr. Call with current==total to finalize."""
+    if "uvicorn" in sys.modules:
+        return
+    pct = current / total if total else 1
+    filled = int(pct * width)
+    bar = "█" * filled + "░" * (width - filled)
+    sys.stderr.write(f"\r  {bar}  {current}/{total} {suffix}  ")
+    sys.stderr.flush()
+    if current == total:
+        sys.stderr.write("\n")
 
 
 def _parse_localisation_key(key: str) -> str:
@@ -68,85 +82,182 @@ def fmt_time(ts: str) -> str:
 
 
 def fmt_event(data: dict) -> str | None:
+    """Brief formatting for the Flight Recorder / CLI."""
+    return _fmt_event(data, narrative=False)
+
+
+def fmt_captains_log(data: dict) -> str | None:
+    """Narrative-style formatting for the Captain's Log."""
+    return _fmt_event(data, narrative=True)
+
+
+def _fmt_event(data: dict, narrative: bool = False) -> str | None:
     event = data.get("event", "")
+
+    if event == "Fileheader":
+        return None
 
     if event == "LoadGame":
         ship = data.get("Ship_Localised", data.get("Ship", ""))
         cmd = data.get("Commander", "")
         creds = fmt_cr(data.get("Credits", 0))
+        if narrative:
+            return f"Loaded into {ship} as {cmd}. Credits: {creds}"
         return f"Loaded: {ship} / {cmd} / {creds}"
-
-    if event == "Fileheader":
-        return None
 
     if event == "FSDJump":
         sys_name = data.get("StarSystem", "")
-        dist = fmt_tons(data.get("JumpDist", 0)) if "JumpDist" in data else ""
-        fuel = fmt_tons(data.get("FuelUsed", 0)) if "FuelUsed" in data else ""
+        dist = data.get("JumpDist", 0)
+        fuel = data.get("FuelUsed", 0)
+        body = data.get("Body", "")
+        if narrative:
+            out = f"Jumped to {sys_name}"
+            parts = []
+            if body:
+                parts.append(f"arrived at {body}")
+            if dist:
+                parts.append(f"{fmt_mass(dist)} ly jump")
+            if fuel:
+                parts.append(f"used {fmt_tons(fuel)} fuel")
+            if parts:
+                out += " (" + "; ".join(parts) + ")"
+            return out
         out = f"Jumped to {sys_name}"
         if dist:
-            out += f"  ({dist})"
+            out += f"  ({fmt_tons(dist)})"
         if fuel:
-            out += f"  fuel: {fuel}"
+            out += f"  fuel: {fmt_tons(fuel)}"
         return out
 
     if event == "StartJump":
         kind = data.get("JumpType", "Jump")
         sys_name = data.get("StarSystem", "")
+        if not sys_name:
+            return None if narrative else f"Initiated {kind}"
+        if narrative:
+            return f"Charging {kind} to {sys_name}"
         return f"Initiated {kind} to {sys_name}"
 
     if event == "SupercruiseEntry":
+        if narrative:
+            return f"Entered supercruise"
         return f"Supercruise entered  ({data.get('StarSystem', '')})"
 
     if event == "SupercruiseExit":
-        return f"Supercruise exited  ({data.get('StarSystem', '')})"
+        sys_name = data.get("StarSystem", "")
+        body = data.get("Body", "")
+        if narrative:
+            out = f"Dropped from supercruise at {sys_name}"
+            if body:
+                out += f" near {body}"
+            return out
+        return f"Supercruise exited  ({sys_name})"
 
     if event == "Docked":
         station = data.get("StationName", "")
         sys_name = data.get("StarSystem", "")
         s_type = data.get("StationType", "")
-        pad = f" pad{data.get('LandingPad', '')}" if data.get("LandingPad") else ""
-        return f"Docked at {station}  ({sys_name})  [{s_type}{pad}]"
+        pad = data.get("LandingPad", "")
+        if narrative:
+            out = f"Docked at {station}"
+            if sys_name:
+                out += f" in the {sys_name} system"
+            parts = []
+            if s_type:
+                parts.append(s_type)
+            if pad:
+                parts.append(f"pad {pad}")
+            if parts:
+                out += " (" + "; ".join(parts) + ")"
+            return out
+        pad_str = f" pad{pad}" if pad else ""
+        return f"Docked at {station}  ({sys_name})  [{s_type}{pad_str}]"
 
     if event == "Undocked":
-        return f"Undocked from {data.get('StationName', '')}"
+        station = data.get("StationName", "")
+        sys_name = data.get("StarSystem", "")
+        if narrative:
+            out = f"Departed from {station}"
+            if sys_name:
+                out += f" in the {sys_name} system"
+            return out
+        return f"Undocked from {station}"
 
     if event == "DockingGranted":
         station = data.get("StationName", "")
         pad = data.get("LandingPad", "")
+        if narrative:
+            out = f"Docking clearance granted at {station}"
+            if pad:
+                out += f" (pad {pad})"
+            return out
         return f"Docking granted at {station}  pad {pad}"
 
     if event == "Touchdown":
         body = data.get("Body", "")
-        grav = f"{data.get('Gravity', 0):.2f}g" if "Gravity" in data else ""
+        sys_name = data.get("StarSystem", "")
+        grav = data.get("Gravity", 0)
+        if narrative:
+            out = f"Landed on {body}"
+            if sys_name:
+                out += f" in the {sys_name} system"
+            if grav:
+                out += f" (gravity: {grav:.2f}g)"
+            return out
         out = f"Landed on {body}"
         if grav:
-            out += f"  (gravity: {grav})"
+            out += f"  (gravity: {grav:.2f}g)"
         return out
 
     if event == "Liftoff":
-        return f"Liftoff from {data.get('Body', '')}"
+        body = data.get("Body", "")
+        sys_name = data.get("StarSystem", "")
+        if narrative:
+            out = f"Liftoff from {body}"
+            if sys_name:
+                out += f" in the {sys_name} system"
+            return out
+        return f"Liftoff from {body}"
 
     if event == "ApproachBody":
-        return f"Approaching {data.get('Body', '')}"
+        body = data.get("Body", "")
+        sys_name = data.get("StarSystem", "")
+        if narrative:
+            out = f"Approaching {body}"
+            if sys_name:
+                out += f" in the {sys_name} system"
+            return out
+        return f"Approaching {body}"
 
     if event == "LeaveBody":
         return f"Left {data.get('Body', '')}"
 
     if event == "MaterialCollected":
         name = data.get("Name_Localised") or _cap(data.get("Name", ""))
-        cat = data.get("Category", "")
         cnt = data.get("Count", 1)
+        cat = data.get("Category", "")
+        if narrative:
+            out = f"Picked up {cnt}x {name}"
+            if cat and cat not in ("Encoded", "Raw", "Manufactured"):
+                out += f" ({cat})"
+            return out
         return f"Collected {name} x{cnt}  ({cat})"
 
     if event == "MaterialDiscarded":
         name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cnt = data.get("Count", 1)
+        if narrative:
+            return f"Discarded {cnt}x {name}"
         return f"Discarded {name} x{cnt}"
 
     if event == "MaterialDiscovered":
         name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cat = data.get("Category", "")
+        if narrative:
+            out = f"Discovered {name}"
+            if cat:
+                out += f" ({cat} material)"
+            return out
         return f"Discovered material: {name}  ({cat})"
 
     if event == "MaterialTrade":
@@ -154,344 +265,27 @@ def fmt_event(data: dict) -> str | None:
         pay_q = data.get("Paid", {}).get("Quantity", 1)
         recv = _cap(data.get("Received", {}).get("Material", ""))
         recv_q = data.get("Received", {}).get("Quantity", 1)
+        if narrative:
+            return f"Traded {pay_q}x {pay} for {recv_q}x {recv}"
         return f"Traded {pay} x{pay_q} → {recv} x{recv_q}"
 
     if event == "MiningRefined":
         item = data.get("Type_Localised", data.get("Type", ""))
         cnt = data.get("Amount", 1)
+        if narrative:
+            return f"Refined {cnt}x {item} from mining"
         return f"Refined {item} x{cnt}"
 
-    if event == "MarketBuy":
-        item = data.get("Type_Localised", data.get("Type", ""))
-        qty = data.get("Count", 1)
-        cost = fmt_cr(data.get("TotalCost", 0))
-        return f"Bought {item} x{qty} for {cost}"
-
-    if event == "MarketSell":
-        item = data.get("Type_Localised", data.get("Type", ""))
-        qty = data.get("Count", 1)
-        gain = fmt_cr(data.get("TotalSale", 0))
-        return f"Sold {item} x{qty} for {gain}"
-
-    if event == "Bounty":
-        target = data.get("Target", "")
-        reward = fmt_cr(data.get("TotalReward", 0))
-        out = f"Bounty: {reward}"
-        if target:
-            out += f"  ({target})"
-        return out
-
-    if event == "RedeemVoucher":
-        vtype = data.get("Type", "")
-        amount = fmt_cr(data.get("Amount", 0))
-        return f"Redeemed {vtype} voucher: {amount}"
-
-    if event == "MissionAccepted":
-        name = data.get("Name_Localised", data.get("Name", ""))
-        faction = data.get("Faction", "")
-        reward = fmt_cr(data.get("Reward", 0)) if "Reward" in data else ""
-        out = f"Accepted mission: {name}  ({faction})"
-        if reward:
-            out += f"  reward: {reward}"
-        return out
-
-    if event == "MissionCompleted":
-        name = data.get("Name_Localised", data.get("Name", ""))
-        faction = data.get("Faction", "")
-        reward = fmt_cr(data.get("Reward", 0)) if "Reward" in data else ""
-        out = f"Completed mission: {name}  ({faction})"
-        if reward:
-            out += f"  reward: {reward}"
-        return out
-
-    if event == "EngineerCraft":
-        eng = data.get("Engineer", "")
-        mod = data.get("BlueprintName", "")
-        lvl = data.get("BlueprintLevel", "")
-        out = f"Engineered by {eng}"
-        if mod:
-            out += f"  {mod}"
-        if lvl:
-            out += f"  (level {lvl})"
-        return out
-
-    if event == "Died":
-        killer = data.get("KillerName", "")
-        rebuy = fmt_cr(data.get("RebuyCost", 0))
-        out = f"Destroyed! Rebuy: {rebuy}"
-        if killer:
-            out += f"  (killed by {killer})"
-        return out
-
-    if event == "Resurrect":
-        cost = fmt_cr(data.get("Cost", 0))
-        return f"Resurrected  cost: {cost}"
-
-    if event == "FuelScoop":
-        scooped = fmt_tons(data.get("Scooped", 0))
-        total = fmt_tons(data.get("Total", 0))
-        return f"Fuel scooped: {scooped}  (total: {total})"
-
-    if event == "BuyAmmo":
-        cost = fmt_cr(data.get("Cost", 0))
-        return f"Bought ammo: {cost}"
-
-    if event == "Repair":
-        cost = fmt_cr(data.get("Cost", 0))
-        return f"Repairs: {cost}"
-
-    if event == "Refuel":
-        cost = fmt_cr(data.get("Cost", 0))
-        amt = fmt_tons(data.get("Amount", 0))
-        return f"Refuel: {amt}  cost: {cost}"
-
-    if event == "SellExplorationData":
-        systems = ", ".join(data.get("Systems", []))
-        value = fmt_cr(data.get("BaseValue", 0))
-        bonus = fmt_cr(data.get("Bonus", 0)) if "Bonus" in data else ""
-        out = f"Sold exploration data: {value}"
-        if bonus:
-            out += f"  bonus: {bonus}"
-        if systems:
-            out += f"  ({systems})"
-        return out
-
-    if event == "Scan":
-        body = data.get("BodyName", "")
-        btype = data.get("StarType", data.get("PlanetClass", ""))
-        dist = data.get("DistanceFromArrivalLS", 0)
-        out = f"Scanned {body}"
-        if btype:
-            out += f"  [{btype}]"
-        if dist:
-            out += f"  {dist:,.2f} ls"
-        return out
-
-    if event == "SAAScanComplete":
-        body = data.get("BodyName", "")
-        probes = data.get("ProbesUsed", 0)
-        return f"Surface scan: {body}  ({probes} probes)"
-
-    if event == "CodexEntry":
-        name = _resolve_field(data, "Name", "")
-        cat = _resolve_field(data, "Category", "")
-        sys_name = data.get("System", "")
-        out = f"Codex entry: {name}"
-        if cat:
-            out += f"  [{cat}]"
-        if sys_name:
-            out += f"  in {sys_name}"
-        return out
-
     if event == "CollectCargo":
+        if narrative:
+            name = data.get("Name_Localised") or _cap(data.get("Name", data.get("Type", "")))
+            cnt = data.get("Count", 1)
+            cat = data.get("Category", "")
+            out = f"Picked up {cnt}x {name}"
+            if cat and cat not in ("Encoded", "Raw", "Manufactured"):
+                out += f" ({cat})"
+            return out
         return f"Collected cargo: {data.get('Type', '')}"
-
-    if event == "EjectCargo":
-        return f"Jettisoned cargo: {data.get('Type', '')} x{data.get('Count', 1)}"
-
-    if event == "LaunchDrone":
-        dt = data.get("Type", "")
-        dmap = {"Collection": "Collector Limpet", "Prospector": "Prospector Limpet",
-                "Repair": "Repair Limpet", "FuelTransfer": "Fuel Limpet",
-                "HatchBreaker": "Hatch Breaker Limpet"}
-        return f"Launched: {dmap.get(dt, dt + ' Limpet' if dt else 'Limpet')}"
-
-    if event == "CrewMemberJoins":
-        return f"Crew joined: {data.get('Crew', '')}"
-
-    if event == "CrewMemberRoleChange":
-        return f"Crew {data.get('Crew', '')} → {data.get('Role', '')}"
-
-    if event == "CrewMemberQuits":
-        return f"Crew left: {data.get('Crew', '')}"
-
-    if event == "BuyTradeData":
-        return f"Bought trade data: {data.get('System', '')}  ({fmt_cr(data.get('Cost', 0))})"
-
-    if event == "MultiSellExplorationData":
-        value = fmt_cr(data.get("TotalEarnings", 0))
-        disc = len(data.get("Discovered", []))
-        return f"Sold exploration data: {value}  ({disc} bodies)"
-
-    if event == "BuyExplorationData":
-        return f"Bought exploration data: {data.get('System', '')}  ({fmt_cr(data.get('Cost', 0))})"
-
-    if event == "SetUserShipName":
-        return f"Renamed {data.get('Ship', '')} → {data.get('UserShipName', '')}"
-
-    if event == "ModuleBuy":
-        module = data.get("SellItem_Localised", data.get("SellItem", ""))
-        cost = fmt_cr(data.get("BuyPrice", 0))
-        return f"Bought module: {module}  ({cost})"
-
-    if event == "ModuleSell":
-        module = data.get("SellItem_Localised", data.get("SellItem", ""))
-        gain = fmt_cr(data.get("SellPrice", 0))
-        return f"Sold module: {module}  ({gain})"
-
-    if event == "ModuleStore":
-        module = data.get("StoredItem_Localised", data.get("StoredItem", ""))
-        return f"Stored module: {module}"
-
-    if event == "VehicleSwitch":
-        return f"Switched to {data.get('To', '')}"
-
-    if event == "FSSSignalDiscovered":
-        signal = data.get("SignalName_Localised") or data.get("SignalName", "")
-        sys_name = data.get("StarSystem", "")
-        out = f"Detected signal: {signal}"
-        if sys_name:
-            out += f" in {sys_name}"
-        return out
-
-    return None
-
-
-def fmt_captains_log(data: dict) -> str | None:
-    """Narrative-style formatting for the Captain's Log."""
-    event = data.get("event", "")
-
-    if event == "Fileheader":
-        return None
-
-    if event == "LoadGame":
-        ship = data.get("Ship_Localised", data.get("Ship", ""))
-        cmd = data.get("Commander", "")
-        creds = fmt_cr(data.get("Credits", 0))
-        return f"Loaded into {ship} as {cmd}. Credits: {creds}"
-
-    if event == "FSDJump":
-        sys_name = data.get("StarSystem", "")
-        dist = data.get("JumpDist", 0)
-        fuel = data.get("FuelUsed", 0)
-        body = data.get("Body", "")
-        out = f"Jumped to {sys_name}"
-        parts = []
-        if body:
-            parts.append(f"arrived at {body}")
-        if dist:
-            parts.append(f"{fmt_mass(dist)} ly jump")
-        if fuel:
-            parts.append(f"used {fmt_tons(fuel)} fuel")
-        if parts:
-            out += " (" + "; ".join(parts) + ")"
-        return out
-
-    if event == "StartJump":
-        kind = data.get("JumpType", "Jump")
-        sys_name = data.get("StarSystem", "")
-        if not sys_name:
-            return None
-        return f"Charging {kind} to {sys_name}"
-
-    if event == "SupercruiseEntry":
-        return f"Entered supercruise"
-
-    if event == "SupercruiseExit":
-        sys_name = data.get("StarSystem", "")
-        body = data.get("Body", "")
-        out = f"Dropped from supercruise at {sys_name}"
-        if body:
-            out += f" near {body}"
-        return out
-
-    if event == "Docked":
-        station = data.get("StationName", "")
-        sys_name = data.get("StarSystem", "")
-        s_type = data.get("StationType", "")
-        pad = data.get("LandingPad", "")
-        out = f"Docked at {station}"
-        if sys_name:
-            out += f" in the {sys_name} system"
-        parts = []
-        if s_type:
-            parts.append(s_type)
-        if pad:
-            parts.append(f"pad {pad}")
-        if parts:
-            out += " (" + "; ".join(parts) + ")"
-        return out
-
-    if event == "Undocked":
-        station = data.get("StationName", "")
-        sys_name = data.get("StarSystem", "")
-        out = f"Departed from {station}"
-        if sys_name:
-            out += f" in the {sys_name} system"
-        return out
-
-    if event == "DockingGranted":
-        station = data.get("StationName", "")
-        pad = data.get("LandingPad", "")
-        out = f"Docking clearance granted at {station}"
-        if pad:
-            out += f" (pad {pad})"
-        return out
-
-    if event == "Touchdown":
-        body = data.get("Body", "")
-        sys_name = data.get("StarSystem", "")
-        grav = data.get("Gravity", 0)
-        out = f"Landed on {body}"
-        if sys_name:
-            out += f" in the {sys_name} system"
-        if grav:
-            out += f" (gravity: {grav:.2f}g)"
-        return out
-
-    if event == "Liftoff":
-        body = data.get("Body", "")
-        sys_name = data.get("StarSystem", "")
-        out = f"Liftoff from {body}"
-        if sys_name:
-            out += f" in the {sys_name} system"
-        return out
-
-    if event == "ApproachBody":
-        body = data.get("Body", "")
-        sys_name = data.get("StarSystem", "")
-        out = f"Approaching {body}"
-        if sys_name:
-            out += f" in the {sys_name} system"
-        return out
-
-    if event == "LeaveBody":
-        body = data.get("Body", "")
-        return f"Left {body}"
-
-    if event in ("MaterialCollected", "CollectCargo"):
-        name = data.get("Name_Localised") or _cap(data.get("Name", data.get("Type", "")))
-        cnt = data.get("Count", 1)
-        cat = data.get("Category", "")
-        out = f"Picked up {cnt}x {name}"
-        if cat and cat != "Encoded" and cat != "Raw" and cat != "Manufactured":
-            out += f" ({cat})"
-        return out
-
-    if event == "MaterialDiscarded":
-        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
-        cnt = data.get("Count", 1)
-        return f"Discarded {cnt}x {name}"
-
-    if event == "MaterialDiscovered":
-        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
-        cat = data.get("Category", "")
-        out = f"Discovered {name}"
-        if cat:
-            out += f" ({cat} material)"
-        return out
-
-    if event == "MaterialTrade":
-        pay = _cap(data.get("Paid", {}).get("Material", ""))
-        pay_q = data.get("Paid", {}).get("Quantity", 1)
-        recv = _cap(data.get("Received", {}).get("Material", ""))
-        recv_q = data.get("Received", {}).get("Quantity", 1)
-        return f"Traded {pay_q}x {pay} for {recv_q}x {recv}"
-
-    if event == "MiningRefined":
-        item = data.get("Type_Localised", data.get("Type", ""))
-        cnt = data.get("Amount", 1)
-        return f"Refined {cnt}x {item} from mining"
 
     if event == "MarketBuy":
         item = data.get("Type_Localised", data.get("Type", ""))
@@ -508,184 +302,299 @@ def fmt_captains_log(data: dict) -> str | None:
     if event == "Bounty":
         target = data.get("Target", "")
         reward = fmt_cr(data.get("TotalReward", 0))
-        out = f"Claimed {reward} bounty"
+        if narrative:
+            out = f"Claimed {reward} bounty"
+            if target:
+                out += f" for {target}"
+            return out
+        out = f"Bounty: {reward}"
         if target:
-            out += f" for {target}"
+            out += f"  ({target})"
         return out
 
     if event == "Died":
         killer = data.get("KillerName", "")
         rebuy = fmt_cr(data.get("RebuyCost", 0))
-        out = f"Ship destroyed! Rebuy cost: {rebuy}"
+        if narrative:
+            out = f"Ship destroyed! Rebuy cost: {rebuy}"
+            if killer:
+                out += f" (killed by {killer})"
+            return out
+        out = f"Destroyed! Rebuy: {rebuy}"
         if killer:
-            out += f" (killed by {killer})"
+            out += f"  (killed by {killer})"
         return out
 
     if event == "Resurrect":
         cost = fmt_cr(data.get("Cost", 0))
-        return f"Resurrected at {data.get('Station', 'the rebuy screen')} for {cost}"
+        if narrative:
+            return f"Resurrected at {data.get('Station', 'the rebuy screen')} for {cost}"
+        return f"Resurrected  cost: {cost}"
 
     if event == "RedeemVoucher":
         vtype = data.get("Type", "")
         amount = fmt_cr(data.get("Amount", 0))
-        return f"Redeemed {vtype} voucher for {amount}"
+        if narrative:
+            return f"Redeemed {vtype} voucher for {amount}"
+        return f"Redeemed {vtype} voucher: {amount}"
 
     if event == "MissionAccepted":
         name = data.get("Name_Localised", data.get("Name", ""))
         faction = data.get("Faction", "")
         reward = fmt_cr(data.get("Reward", 0)) if "Reward" in data else ""
-        out = f"Accepted mission: {name} ({faction})"
+        if narrative:
+            out = f"Accepted mission: {name} ({faction})"
+            if reward:
+                out += f" — reward: {reward}"
+            return out
+        out = f"Accepted mission: {name}  ({faction})"
         if reward:
-            out += f" — reward: {reward}"
+            out += f"  reward: {reward}"
         return out
 
     if event == "MissionCompleted":
         name = data.get("Name_Localised", data.get("Name", ""))
         faction = data.get("Faction", "")
         reward = fmt_cr(data.get("Reward", 0)) if "Reward" in data else ""
-        out = f"Completed mission: {name} ({faction})"
+        if narrative:
+            out = f"Completed mission: {name} ({faction})"
+            if reward:
+                out += f" — reward: {reward}"
+            return out
+        out = f"Completed mission: {name}  ({faction})"
         if reward:
-            out += f" — reward: {reward}"
+            out += f"  reward: {reward}"
         return out
 
     if event == "EngineerCraft":
         eng = data.get("Engineer", "")
         mod = data.get("BlueprintName", "")
         lvl = data.get("BlueprintLevel", "")
+        if narrative:
+            out = f"Engineered by {eng}"
+            if mod:
+                out += f": {mod}"
+            if lvl:
+                out += f" (grade {lvl})"
+            return out
         out = f"Engineered by {eng}"
         if mod:
-            out += f": {mod}"
+            out += f"  {mod}"
         if lvl:
-            out += f" (grade {lvl})"
+            out += f"  (level {lvl})"
         return out
 
     if event == "FuelScoop":
         scooped = fmt_tons(data.get("Scooped", 0))
         total = fmt_tons(data.get("Total", 0))
-        return f"Scooped {scooped} fuel from the star (total onboard: {total})"
+        if narrative:
+            return f"Scooped {scooped} fuel from the star (total onboard: {total})"
+        return f"Fuel scooped: {scooped}  (total: {total})"
 
     if event == "BuyAmmo":
         cost = fmt_cr(data.get("Cost", 0))
-        return f"Restocked ammunition for {cost}"
+        if narrative:
+            return f"Restocked ammunition for {cost}"
+        return f"Bought ammo: {cost}"
 
     if event == "Repair":
         cost = fmt_cr(data.get("Cost", 0))
-        return f"Repairs completed: {cost}"
+        if narrative:
+            return f"Repairs completed: {cost}"
+        return f"Repairs: {cost}"
 
     if event == "Refuel":
         cost = fmt_cr(data.get("Cost", 0))
         amt = fmt_tons(data.get("Amount", 0))
-        return f"Refueled {amt} for {cost}"
+        if narrative:
+            return f"Refueled {amt} for {cost}"
+        return f"Refuel: {amt}  cost: {cost}"
 
     if event == "SellExplorationData":
         systems = ", ".join(data.get("Systems", []))
         value = fmt_cr(data.get("BaseValue", 0))
         bonus = fmt_cr(data.get("Bonus", 0)) if "Bonus" in data else ""
-        out = f"Sold exploration data for {value}"
+        if narrative:
+            out = f"Sold exploration data for {value}"
+            if bonus:
+                out += f" (bonus: {bonus})"
+            if systems:
+                out += f" — systems: {systems}"
+            return out
+        out = f"Sold exploration data: {value}"
         if bonus:
-            out += f" (bonus: {bonus})"
+            out += f"  bonus: {bonus}"
         if systems:
-            out += f" — systems: {systems}"
+            out += f"  ({systems})"
         return out
 
     if event == "MultiSellExplorationData":
         value = fmt_cr(data.get("TotalEarnings", 0))
         disc = len(data.get("Discovered", []))
         mapped = len(data.get("Mapped", []))
-        out = f"Sold exploration data for {value}"
-        parts = []
-        if disc:
-            parts.append(f"{disc} discovered")
-        if mapped:
-            parts.append(f"{mapped} mapped")
-        if parts:
-            out += f" ({'; '.join(parts)})"
-        return out
+        if narrative:
+            out = f"Sold exploration data for {value}"
+            parts = []
+            if disc:
+                parts.append(f"{disc} discovered")
+            if mapped:
+                parts.append(f"{mapped} mapped")
+            if parts:
+                out += f" ({'; '.join(parts)})"
+            return out
+        return f"Sold exploration data: {value}  ({disc} bodies)"
+
+    if event == "BuyExplorationData":
+        sys_name = data.get("System", "")
+        cost = fmt_cr(data.get("Cost", 0))
+        if narrative:
+            return f"Purchased exploration data for {sys_name} ({cost})"
+        return f"Bought exploration data: {sys_name}  ({cost})"
 
     if event == "Scan":
         body = data.get("BodyName", "")
         btype = data.get("StarType", data.get("PlanetClass", ""))
         dist = data.get("DistanceFromArrivalLS", 0)
+        if narrative:
+            out = f"Scanned {body}"
+            if btype:
+                out += f" — {btype}"
+            if dist:
+                out += f" ({fmt_mass(dist)} ls from arrival)"
+            return out
         out = f"Scanned {body}"
         if btype:
-            out += f" — {btype}"
+            out += f"  [{btype}]"
         if dist:
-            out += f" ({fmt_mass(dist)} ls from arrival)"
+            out += f"  {dist:,.2f} ls"
         return out
 
     if event == "SAAScanComplete":
         body = data.get("BodyName", "")
         probes = data.get("ProbesUsed", 0)
-        mappings = data.get("MappingsComplete", 0) if "MappingsComplete" in data else None
-        out = f"Completed surface scan of {body} ({probes} probes)"
-        if mappings:
-            out += f" — {mappings} mappings"
-        return out
+        if narrative:
+            mappings = data.get("MappingsComplete")
+            out = f"Completed surface scan of {body} ({probes} probes)"
+            if mappings:
+                out += f" — {mappings} mappings"
+            return out
+        return f"Surface scan: {body}  ({probes} probes)"
 
     if event == "CodexEntry":
         name = _resolve_field(data, "Name", "")
         cat = _resolve_field(data, "Category", "")
-        subcat = _resolve_field(data, "SubCategory", "")
         sys_name = data.get("System", "")
-        out = f"Logged Codex entry: {name}"
-        if subcat:
-            out += f" ({subcat})"
+        if narrative:
+            subcat = _resolve_field(data, "SubCategory", "")
+            out = f"Logged Codex entry: {name}"
+            if subcat:
+                out += f" ({subcat})"
+            if cat:
+                out += f" — {cat}"
+            if sys_name:
+                out += f" in the {sys_name} system"
+            return out
+        out = f"Codex entry: {name}"
         if cat:
-            out += f" — {cat}"
+            out += f"  [{cat}]"
         if sys_name:
-            out += f" in the {sys_name} system"
+            out += f"  in {sys_name}"
         return out
 
     if event == "EjectCargo":
-        return f"Jettisoned {data.get('Count', 1)}x {data.get('Type', 'cargo')}"
+        ctype = data.get("Type", "")
+        cnt = data.get("Count", 1)
+        if narrative:
+            return f"Jettisoned {cnt}x {ctype}"
+        return f"Jettisoned cargo: {ctype} x{cnt}"
 
     if event == "LaunchDrone":
-        return None
+        if narrative:
+            return None
+        dt = data.get("Type", "")
+        dmap = {"Collection": "Collector Limpet", "Prospector": "Prospector Limpet",
+                "Repair": "Repair Limpet", "FuelTransfer": "Fuel Limpet",
+                "HatchBreaker": "Hatch Breaker Limpet"}
+        return f"Launched: {dmap.get(dt, dt + ' Limpet' if dt else 'Limpet')}"
 
     if event == "CrewMemberJoins":
-        return f"{data.get('Crew', 'A crew member')} joined the crew"
+        crew = data.get("Crew", "")
+        if narrative:
+            return f"{crew or 'A crew member'} joined the crew"
+        return f"Crew joined: {crew}"
 
     if event == "CrewMemberRoleChange":
-        return f"{data.get('Crew', 'A crew member')} assigned to {data.get('Role', 'a new role')}"
+        crew = data.get("Crew", "")
+        role = data.get("Role", "")
+        if narrative:
+            return f"{crew or 'A crew member'} assigned to {role or 'a new role'}"
+        return f"Crew {crew} → {role}"
 
     if event == "CrewMemberQuits":
-        return f"{data.get('Crew', 'A crew member')} left the crew"
+        crew = data.get("Crew", "")
+        if narrative:
+            return f"{crew or 'A crew member'} left the crew"
+        return f"Crew left: {crew}"
 
     if event == "BuyTradeData":
-        return f"Purchased trade data for {data.get('System', '')} ({fmt_cr(data.get('Cost', 0))})"
-
-    if event == "BuyExplorationData":
-        return f"Purchased exploration data for {data.get('System', '')} ({fmt_cr(data.get('Cost', 0))})"
+        sys_name = data.get("System", "")
+        cost = fmt_cr(data.get("Cost", 0))
+        if narrative:
+            return f"Purchased trade data for {sys_name} ({cost})"
+        return f"Bought trade data: {sys_name}  ({cost})"
 
     if event == "SetUserShipName":
         ship = data.get("Ship", "")
         name = data.get("UserShipName", "")
-        sid = data.get("UserShipId", "")
-        out = f"Renamed {ship}"
-        if name:
-            out += f" to \"{name}\""
-        if sid:
-            out += f" (ID: {sid})"
-        return out
+        if narrative:
+            sid = data.get("UserShipId", "")
+            out = f"Renamed {ship}"
+            if name:
+                out += f' to "{name}"'
+            if sid:
+                out += f" (ID: {sid})"
+            return out
+        return f"Renamed {ship} → {name}"
 
     if event == "ModuleBuy":
-        module = data.get("BuyItem_Localised", data.get("BuyItem", data.get("SellItem_Localised", data.get("SellItem", ""))))
         cost = fmt_cr(data.get("BuyPrice", 0))
-        if not module:
-            return None
-        return f"Installed {module} for {cost}"
+        if narrative:
+            module = data.get("BuyItem_Localised", data.get("BuyItem", data.get("SellItem_Localised", data.get("SellItem", ""))))
+            if not module:
+                return None
+            return f"Installed {module} for {cost}"
+        module = data.get("SellItem_Localised", data.get("SellItem", ""))
+        return f"Bought module: {module}  ({cost})"
 
     if event == "ModuleSell":
         module = data.get("SellItem_Localised", data.get("SellItem", ""))
         gain = fmt_cr(data.get("SellPrice", 0))
-        return f"Removed {module} — gained {gain}"
+        if narrative:
+            return f"Removed {module} — gained {gain}"
+        return f"Sold module: {module}  ({gain})"
 
     if event == "ModuleStore":
         module = data.get("StoredItem_Localised", data.get("StoredItem", ""))
-        return f"Stored {module} in the shipyard"
+        if narrative:
+            return f"Stored {module} in the shipyard"
+        return f"Stored module: {module}"
 
     if event == "VehicleSwitch":
         return f"Switched to {data.get('To', '')}"
+
+    if event == "FSSSignalDiscovered":
+        if narrative:
+            return None
+        signal = data.get("SignalName_Localised") or data.get("SignalName", "")
+        sys_name = data.get("StarSystem", "")
+        out = f"Detected signal: {signal}"
+        if sys_name:
+            out += f" in {sys_name}"
+        return out
+
+    # --- Captain's Log only events ---
+    if not narrative:
+        return None
 
     if event == "BuyDrones":
         count = data.get("Count", 1)
@@ -754,23 +663,23 @@ def fmt_captains_log(data: dict) -> str | None:
     if event == "CreateSuitLoadout":
         name = data.get("LoadoutName", "")
         suit = data.get("SuitName_Localised", data.get("SuitName", ""))
-        out = f"Created loadout"
+        out = "Created loadout"
         if name:
-            out += f" \"{name}\""
+            out += f' "{name}"'
         if suit:
             out += f" for {suit}"
         return out
 
     if event == "DeleteSuitLoadout":
         name = data.get("LoadoutName", "")
-        return f"Deleted loadout \"{name}\"" if name else "Deleted a suit loadout"
+        return f'Deleted loadout "{name}"' if name else "Deleted a suit loadout"
 
     if event == "SwitchSuitLoadout":
         name = data.get("LoadoutName", "")
         suit = data.get("SuitName_Localised", data.get("SuitName", ""))
-        out = f"Switched to loadout"
+        out = "Switched to loadout"
         if name:
-            out += f" \"{name}\""
+            out += f' "{name}"'
         if suit:
             out += f" ({suit})"
         return out
@@ -787,11 +696,8 @@ def fmt_captains_log(data: dict) -> str | None:
             parts = from_.split("#name=")
             if len(parts) > 1:
                 from_ = parts[1].rstrip(";")
-        out = f"Message from {from_}: \"{msg}\"" if from_ else f"Message: \"{msg}\""
+        out = f'Message from {from_}: "{msg}"' if from_ else f'Message: "{msg}"'
         return out
-
-    if event == "FSSSignalDiscovered":
-        return None
 
     if event == "FSSAllBodiesFound":
         count = data.get("Count", 0)
@@ -834,16 +740,14 @@ def fmt_captains_log(data: dict) -> str | None:
         parts = []
         for item in items:
             name = item.get("Species_Localised", item.get("Species", ""))
-            value = item.get("Value", 0)
-            bonus = item.get("Bonus", 0)
             if name:
                 s = name
-                if bonus:
-                    s += f" (first discovery bonus!)"
+                if item.get("Bonus"):
+                    s += " (first discovery bonus!)"
                 parts.append(s)
         out = f"Sold organic data for {total}"
         if parts:
-            out += f" — {', '.join(parts)}"
+            out += " — " + ", ".join(parts)
         return out
 
     if event == "BuyOrganicData":
@@ -870,14 +774,11 @@ def fmt_captains_log(data: dict) -> str | None:
         return out
 
     if event == "CarrierBuy":
-        cid = data.get("CarrierID", "")
         name = data.get("CallingName", "")
         cost = fmt_cr(data.get("Price", 0))
-        out = f"Purchased fleet carrier"
+        out = 'Purchased fleet carrier'
         if name:
-            out += f" \"{name}\""
-        if cid:
-            out += f" ({cid})"
+            out += f' "{name}"'
         if data.get("Price"):
             out += f" for {cost}"
         return out
@@ -891,7 +792,6 @@ def fmt_captains_log(data: dict) -> str | None:
         return out
 
     if event == "CarrierStatistics":
-        # this is a periodic status event, skip it
         return None
 
     if event in ("CarrierShipPack", "CarrierModulePack"):
@@ -903,7 +803,6 @@ def fmt_captains_log(data: dict) -> str | None:
         sys_name = data.get("StarSystem", "")
         body = data.get("Body", "")
         station = data.get("StationName", "")
-        s_type = data.get("StationType", "")
         out = f"Located in the {sys_name} system"
         if body:
             out += f" at {body}"
@@ -922,7 +821,7 @@ def fmt_captains_log(data: dict) -> str | None:
     if event == "ShipTargeted":
         target = data.get("PilotName_Localised", data.get("PilotName", ""))
         ship = data.get("Ship_Localised", data.get("Ship", ""))
-        out = f"Targeting"
+        out = "Targeting"
         if ship:
             out += f" {ship}"
         if target:
@@ -946,10 +845,9 @@ def fmt_captains_log(data: dict) -> str | None:
 
     if event == "Promotion":
         rank = data.get("Rank", "")
-        out = f"Promoted!"
+        out = "Promoted!"
         if rank:
             out += f" — {rank}"
         return out
 
-    # fallback for unhandled events
     return None

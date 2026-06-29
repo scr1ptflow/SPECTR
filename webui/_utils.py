@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import sqlite3
@@ -31,10 +32,43 @@ def get_conn(db_path: str):
     return conn
 
 
+def get_latest_journal(journal_dir: str) -> str | None:
+    """Return the most recent Journal.*.log in the given directory."""
+    if not journal_dir or not os.path.isdir(journal_dir):
+        return None
+    files = sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log")), reverse=True)
+    return files[0] if files else None
+
+
+def find_journal_dir(config_path: str | None = None) -> str | None:
+    """Find the Elite Dangerous journal directory.
+
+    Checks (in order): config.json journal_path, ED_JOURNAL_DIR env var,
+    default Steam Proton paths.
+    """
+    if config_path and os.path.exists(config_path):
+        with open(config_path) as f:
+            cfg = json.load(f)
+        path = cfg.get("journal_path", "")
+        if path and os.path.isdir(path):
+            return path
+    env = os.environ.get("ED_JOURNAL_DIR", "")
+    if env and os.path.isdir(env):
+        return env
+    candidates = [
+        os.path.join(os.path.expanduser("~"), ".steam", "steam", "steamapps", "compatdata", "359320", "pfx", "drive_c", "users", "steamuser", "Saved Games", "Frontier Developments", "Elite Dangerous"),
+        os.path.join(os.path.expanduser("~"), ".local", "share", "Steam", "steamapps", "compatdata", "359320", "pfx", "drive_c", "users", "steamuser", "Saved Games", "Frontier Developments", "Elite Dangerous"),
+    ]
+    for c in candidates:
+        if os.path.isdir(c) and glob.glob(os.path.join(c, "Journal.*.log")):
+            return c
+    return None
+
+
 def get_system():
     config = read_config()
-    jdir = config.get("journal_path", "")
-    jfile = journal.get_latest_journal(jdir)
+    jdir = find_journal_dir(CONFIG_PATH) or config.get("journal_path", "")
+    jfile = get_latest_journal(jdir)
     if not jfile:
         return None
     return journal.read_current_system(jfile)

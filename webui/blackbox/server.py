@@ -1,14 +1,12 @@
 import json
 import os
-import sys
 
 from fastapi import FastAPI, HTTPException, Query as Q
 from fastapi.responses import HTMLResponse
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 from blackbox.formatter import fmt_date, fmt_time, fmt_event
-from webui._utils import read_config, resolve_db, get_conn
+from blackbox.store import Store
+from webui._utils import resolve_db, get_conn
 
 SHIP_EVENTS = frozenset({
     "FSDJump", "StartJump", "SupercruiseEntry", "SupercruiseExit",
@@ -24,6 +22,7 @@ SHIP_EVENTS = frozenset({
     "Scan", "SAAScanComplete", "CodexEntry",
     "CollectCargo", "EjectCargo", "LaunchDrone",
     "EngineerCraft",
+    "FSSSignalDiscovered",
 })
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -42,23 +41,17 @@ def api_stats(db: str = Q(None, description="DB path override")):
     db_path = resolve_db(db)
     if not os.path.exists(db_path):
         return {"ok": False, "error": f"Database not found: {db_path}"}
-    conn = get_conn(db_path)
+    store = Store(db_path)
     try:
-        events = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-        status_count = conn.execute("SELECT COUNT(*) FROM status").fetchone()[0]
-        event_types = conn.execute("SELECT COUNT(DISTINCT event) FROM events").fetchone()[0]
-        types = conn.execute(
-            "SELECT event, COUNT(*) as cnt FROM events GROUP BY event ORDER BY cnt DESC"
-        ).fetchall()
+        stats = store.get_stats()
+        types = store.get_event_types()
         return {
             "ok": True,
-            "events": events,
-            "status": status_count,
-            "event_types": event_types,
+            **stats,
             "types": [{"event": r["event"], "count": r["cnt"]} for r in types],
         }
     finally:
-        conn.close()
+        store.close()
 
 
 @sub_app.get("/api/log")
@@ -134,14 +127,12 @@ def api_event_types(db: str = Q(None, description="DB path override")):
     db_path = resolve_db(db)
     if not os.path.exists(db_path):
         return {"ok": False, "error": f"Database not found: {db_path}"}
-    conn = get_conn(db_path)
+    store = Store(db_path)
     try:
-        types = conn.execute(
-            "SELECT event, COUNT(*) as cnt FROM events GROUP BY event ORDER BY cnt DESC"
-        ).fetchall()
+        types = store.get_event_types()
         return {"ok": True, "types": [{"event": r["event"], "count": r["cnt"]} for r in types]}
     finally:
-        conn.close()
+        store.close()
 
 
 @sub_app.get("/api/status/latest")

@@ -1,19 +1,9 @@
 import argparse
 import json
-import os
 import sys
 
 from . import journal, edsm, checkers
-
-DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_PATH = os.path.join(DIR, "config.json")
-
-
-def read_config():
-    if not os.path.exists(CONFIG_PATH):
-        return {}
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
+from webui._utils import find_journal_dir, read_config
 
 
 def main():
@@ -46,6 +36,8 @@ def main():
 
     config = read_config()
     journal_dir = args.journal_dir or config.get("journal_path") or ""
+    if not journal_dir:
+        journal_dir = find_journal_dir()
     if not journal_dir:
         print("error: journal directory not configured — set journal_path in config.json or use --journal-dir")
         return 1

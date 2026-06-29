@@ -1,8 +1,11 @@
 import json
-import os
 import glob
+import os
 import re
 from datetime import datetime, timezone
+
+from blackbox.formatter import print_progress
+from webui._utils import find_journal_dir
 
 
 def _parse_ts(ts: str) -> datetime:
@@ -62,28 +65,14 @@ def _ensure_kill_data(m: dict, ev: dict):
 
 
 def _read_journal_dir(config_path: str | None = None) -> str | None:
-    if config_path and os.path.exists(config_path):
-        with open(config_path) as f:
-            cfg = json.load(f)
-        path = cfg.get("journal_path", "")
-        if path and os.path.isdir(path):
-            return path
-    env = os.environ.get("ED_JOURNAL_DIR", "")
-    if env and os.path.isdir(env):
-        return env
-    candidates = [
-        os.path.join(os.path.expanduser("~"), ".steam", "steam", "steamapps", "compatdata", "359320", "pfx", "drive_c", "users", "steamuser", "Saved Games", "Frontier Developments", "Elite Dangerous"),
-        os.path.join(os.path.expanduser("~"), ".local", "share", "Steam", "steamapps", "compatdata", "359320", "pfx", "drive_c", "users", "steamuser", "Saved Games", "Frontier Developments", "Elite Dangerous"),
-    ]
-    for c in candidates:
-        if os.path.isdir(c) and glob.glob(os.path.join(c, "Journal.*.log")):
-            return c
-    return None
+    return find_journal_dir(config_path)
 
 
 def _iter_journal_events(journal_dir: str):
-    pattern = os.path.join(journal_dir, "Journal.*.log")
-    for fpath in sorted(glob.glob(pattern)):
+    files = sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log")))
+    total = len(files)
+    for i, fpath in enumerate(files, 1):
+        print_progress(i, total, suffix="files")
         with open(fpath, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()

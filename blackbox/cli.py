@@ -3,7 +3,6 @@
 import argparse
 import json
 import logging
-import os
 import signal
 import sys
 from pathlib import Path
@@ -12,6 +11,7 @@ from . import __version__
 from .formatter import fmt_date, fmt_time, fmt_event
 from .store import Store
 from .recorder import Recorder
+from webui._utils import find_journal_dir
 
 _PROJECT_DIR = Path(__file__).resolve().parent.parent
 DB_DEFAULT = str(_PROJECT_DIR / "blackbox.db")
@@ -19,21 +19,8 @@ logger = logging.getLogger("blackbox")
 
 
 def _find_journal_dir() -> Path | None:
-    candidates = [
-        Path.home()
-        / ".steam/steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser"
-        / "Saved Games/Frontier Developments/Elite Dangerous",
-        Path.home()
-        / ".local/share/Steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser"
-        / "Saved Games/Frontier Developments/Elite Dangerous",
-    ]
-    env_dir = os.environ.get("ED_JOURNAL_DIR", "")
-    if env_dir:
-        candidates.append(Path(env_dir))
-    for p in candidates:
-        if p.exists() and list(p.glob("Journal.*.log")):
-            return p
-    return None
+    found = find_journal_dir()
+    return Path(found) if found else None
 
 
 def cmd_record(args):

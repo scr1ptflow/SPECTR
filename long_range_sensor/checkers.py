@@ -1,4 +1,7 @@
+import sys
 import time
+
+from blackbox.formatter import print_progress
 
 _checkers = {}
 
@@ -51,8 +54,10 @@ def exobiology(system, edsm, radius=100, ship_size="L"):
 
     best = {}
     seen = set()
+    total = len(nearby)
 
-    for sys_data in nearby:
+    for idx, sys_data in enumerate(nearby, 1):
+        print_progress(idx, total, suffix="systems searched")
         sys_name = sys_data.get("name")
         if not sys_name or sys_name.lower() == system.lower():
             continue

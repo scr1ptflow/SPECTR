@@ -1,12 +1,9 @@
 import json
 import os
-import sys
 from collections import defaultdict
 
 from fastapi import FastAPI, Query as Q
 from fastapi.responses import HTMLResponse
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from blackbox.formatter import fmt_date, fmt_time, fmt_captains_log
 from webui._utils import resolve_db, get_conn

@@ -5,13 +5,12 @@ function esc(s) {
 }
 
 function toUGT(d) {
-  var dt = new Date(d);
-  var ugt = new Date(dt.getTime() + 1286 * 365.25 * 24 * 60 * 60 * 1000);
-  return ugt.toLocaleString();
+  var y = d.getUTCFullYear() + 1286;
+  var m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  var day = String(d.getUTCDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
 }
 
 function todayUGT() {
-  var now = new Date();
-  var ugt = new Date(now.getTime() + 1286 * 365.25 * 24 * 60 * 60 * 1000);
-  return ugt.toISOString().slice(0, 10);
+  return toUGT(new Date());
 }
