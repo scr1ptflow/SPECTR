@@ -89,16 +89,16 @@ webui/
 
 ## Conventions
 
-- Database file path is `args.db` (default `blackbox.db`).
+- Database file path is `args.db` (default `blackbox.db`, resolved relative to project root via `_PROJECT_DIR`).
 - Recorder tracks per-file byte position in memory (`_positions` dict), not persisted.
 - Event display formatting lives in `blackbox/formatter.py` — shared between CLI and webui. Uses `_resolve_field()` / `_parse_localisation_key()` to handle `$` localization keys.
 - Timestamps are offset +1286 years for UGT display. Times are suffixed with ` UGT`.
-- Use `Name_Localised` (not `Name`) for human-readable material/item names.
+- Material names use `Name_Localised`; fallback `Name` is run through `_cap()` to capitalize first letter. `MaterialTrade` sub-fields always capped.
 - No ORM; raw SQL via `sqlite3`.
 - SQLite uses WAL mode.
 - Flight Recorder webui shows only current UGT day by default, with day-of-week filters, All button, and CSV export.
 - Blackbox API filters to ship-relevant events only (SHIP_EVENTS whitelist in `webui/blackbox/server.py`).
-- Captain's Log shows ALL events in narrative form via `fmt_captains_log()`.
+- Captain's Log shows narrative events only (filters `LaunchDrone`, `FSSSignalDiscovered`, `Fileheader`, `ShipLocker`, `CarrierStatistics`). Enriched with session summaries, per-day financial ledger, ship filter, first-discovery badges, and milestone highlights (promotion, carrier buy, Sag A*, Colonia, Founders World). Live mode with 2s polling and auto-scroll.
 - Missions reader uses journal `KillTarget` field directly (falls back to name regex).
 - Missions progress auto-detected: KillTarget → Kills, PassengerTarget → Passengers, Count → Delivered/Tons Mined.
 - Missions reader computes `remaining` seconds from Expiry timestamp, `progress` dict with current/target/type.
@@ -120,14 +120,14 @@ webui/
 - `missions/reader.py` — mission state builder from journal events
 - `ship_status/reader.py` — journal/status reading, module name/rating resolution, bulkhead type extraction, cargo value, economy, ship finances
 - `webui/ship_status/static/index.html` — 4-column LCARS grid: Shield/Hull | Cargo (value+items) | Finances | reserved
-- `webui/captains_log/server.py` — Captain's Log API (narrative event log by day)
-- `webui/captains_log/static/index.html` — day-grouped narrative log with date picker and sidebar
+- `webui/captains_log/server.py` — Captain's Log API (narrative event log by day, enriched with sessions, ship tracking, financials, milestones)
+- `webui/captains_log/static/index.html` — day-grouped narrative log with date picker, ship filter, session headers, financial ledger, first-discovery/milestone badges, live mode
 
 ## Gotchas
 
 - Inara/EDSM API keys in `config.json` are unused by blackbox; LRS uses EDSM key.
 - EDSM sphere-systems caps at ~100 LY (returns empty beyond that).
 - `(journal_file, line_number)` UNIQUE constraint in DB prevents duplicates from restarts.
-- Material events use `Name_Localised` (falls back to `Name`).
+- Material events use `Name_Localised` (falls back to `Name` with `_cap()` first-letter capitalization).
 - Ship bulkhead Item varies by ship: `armour_*`, `int_bulkheads_*`, or `<ship>_armour_gradeN` (e.g. `lakonminer_armour_grade1`).
 - Cargo value returns None if any item has no known price; unknown items are silently skipped for total calculation.

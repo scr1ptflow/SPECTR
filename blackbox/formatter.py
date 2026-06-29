@@ -20,6 +20,10 @@ def _parse_localisation_key(key: str) -> str:
     return key.replace("_", " ").strip()
 
 
+def _cap(s: str) -> str:
+    return s[0].upper() + s[1:] if s else s
+
+
 def _resolve_field(data: dict, field: str, default: str = "") -> str:
     """Resolve a journal field: _Localised → raw → parse $ key."""
     val = data.get(f"{field}_Localised", data.get(field, default))
@@ -130,25 +134,25 @@ def fmt_event(data: dict) -> str | None:
         return f"Left {data.get('Body', '')}"
 
     if event == "MaterialCollected":
-        name = data.get("Name_Localised", data.get("Name", ""))
+        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cat = data.get("Category", "")
         cnt = data.get("Count", 1)
         return f"Collected {name} x{cnt}  ({cat})"
 
     if event == "MaterialDiscarded":
-        name = data.get("Name_Localised", data.get("Name", ""))
+        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cnt = data.get("Count", 1)
         return f"Discarded {name} x{cnt}"
 
     if event == "MaterialDiscovered":
-        name = data.get("Name_Localised", data.get("Name", ""))
+        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cat = data.get("Category", "")
         return f"Discovered material: {name}  ({cat})"
 
     if event == "MaterialTrade":
-        pay = data.get("Paid", {}).get("Material", "")
+        pay = _cap(data.get("Paid", {}).get("Material", ""))
         pay_q = data.get("Paid", {}).get("Quantity", 1)
-        recv = data.get("Received", {}).get("Material", "")
+        recv = _cap(data.get("Received", {}).get("Material", ""))
         recv_q = data.get("Received", {}).get("Quantity", 1)
         return f"Traded {pay} x{pay_q} → {recv} x{recv_q}"
 
@@ -286,7 +290,11 @@ def fmt_event(data: dict) -> str | None:
         return f"Jettisoned cargo: {data.get('Type', '')} x{data.get('Count', 1)}"
 
     if event == "LaunchDrone":
-        return f"Launched drone: {data.get('Type', '')}"
+        dt = data.get("Type", "")
+        dmap = {"Collection": "Collector Limpet", "Prospector": "Prospector Limpet",
+                "Repair": "Repair Limpet", "FuelTransfer": "Fuel Limpet",
+                "HatchBreaker": "Hatch Breaker Limpet"}
+        return f"Launched: {dmap.get(dt, dt + ' Limpet' if dt else 'Limpet')}"
 
     if event == "CrewMemberJoins":
         return f"Crew joined: {data.get('Crew', '')}"
@@ -327,6 +335,14 @@ def fmt_event(data: dict) -> str | None:
 
     if event == "VehicleSwitch":
         return f"Switched to {data.get('To', '')}"
+
+    if event == "FSSSignalDiscovered":
+        signal = data.get("SignalName_Localised") or data.get("SignalName", "")
+        sys_name = data.get("StarSystem", "")
+        out = f"Detected signal: {signal}"
+        if sys_name:
+            out += f" in {sys_name}"
+        return out
 
     return None
 
@@ -444,7 +460,7 @@ def fmt_captains_log(data: dict) -> str | None:
         return f"Left {body}"
 
     if event in ("MaterialCollected", "CollectCargo"):
-        name = data.get("Name_Localised", data.get("Name", data.get("Type", "")))
+        name = data.get("Name_Localised") or _cap(data.get("Name", data.get("Type", "")))
         cnt = data.get("Count", 1)
         cat = data.get("Category", "")
         out = f"Picked up {cnt}x {name}"
@@ -453,12 +469,12 @@ def fmt_captains_log(data: dict) -> str | None:
         return out
 
     if event == "MaterialDiscarded":
-        name = data.get("Name_Localised", data.get("Name", ""))
+        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cnt = data.get("Count", 1)
         return f"Discarded {cnt}x {name}"
 
     if event == "MaterialDiscovered":
-        name = data.get("Name_Localised", data.get("Name", ""))
+        name = data.get("Name_Localised") or _cap(data.get("Name", ""))
         cat = data.get("Category", "")
         out = f"Discovered {name}"
         if cat:
@@ -466,9 +482,9 @@ def fmt_captains_log(data: dict) -> str | None:
         return out
 
     if event == "MaterialTrade":
-        pay = data.get("Paid", {}).get("Material", "")
+        pay = _cap(data.get("Paid", {}).get("Material", ""))
         pay_q = data.get("Paid", {}).get("Quantity", 1)
-        recv = data.get("Received", {}).get("Material", "")
+        recv = _cap(data.get("Received", {}).get("Material", ""))
         recv_q = data.get("Received", {}).get("Quantity", 1)
         return f"Traded {pay_q}x {pay} for {recv_q}x {recv}"
 
@@ -624,7 +640,7 @@ def fmt_captains_log(data: dict) -> str | None:
         return f"Jettisoned {data.get('Count', 1)}x {data.get('Type', 'cargo')}"
 
     if event == "LaunchDrone":
-        return f"Launched {data.get('Type', 'a drone')}"
+        return None
 
     if event == "CrewMemberJoins":
         return f"{data.get('Crew', 'A crew member')} joined the crew"
@@ -775,14 +791,7 @@ def fmt_captains_log(data: dict) -> str | None:
         return out
 
     if event == "FSSSignalDiscovered":
-        signal = data.get("SignalName", "")
-        if signal and signal.startswith("$"):
-            return None
-        sys_name = data.get("StarSystem", "")
-        out = f"Detected signal: {signal}"
-        if sys_name:
-            out += f" in {sys_name}"
-        return out
+        return None
 
     if event == "FSSAllBodiesFound":
         count = data.get("Count", 0)

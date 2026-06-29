@@ -109,13 +109,18 @@ Tracks active, failed, and completed missions from journal events.
 
 ## captains-log — Captain's Log
 
-A narrative log of **all** journal events, day-grouped with a date picker.
+A narrative log enriched with session summaries, ship tracking, financials, and milestones.
 
 ```
 Web UI at /captains-log/
 ```
 
 - Uses `fmt_captains_log()` for human-readable sentences ("Jumped to Sol", "Picked up 3x Zinc", "Docked at Jameson Memorial")
-- Left sidebar with available days, date picker to jump to any date, Today and All buttons
-- Shows every event recorded by the blackbox — unlike the ship-focused blackbox timeline, the Captain's Log includes messages, signals, on-foot actions, and all other journal entries
-- Events with no narrative value (Fileheader, Commander, startup snapshots) are hidden
+- **Session summaries** — events grouped into game sessions (bounded by `LoadGame`). Each session header shows ship, jumps, bounties, missions, credits earned/spent
+- **Ship filter** — dropdown to view events for a specific ship only
+- **Per-day financial ledger** — income, expenses, and net credits at the bottom of each day
+- **First-discovery badges** — gold "★ First Discovery" badges on organic/exploration data sold with a bonus
+- **Milestone highlights** — special badges for promotions, carrier purchase, ship destruction, Sag A*/Colonia/Founders World visits
+- **Live mode** — toggle to show today's events with 2s auto-refresh and auto-scroll
+- Left sidebar with available days, date picker, Today and All buttons
+- Filters out operational noise: `LaunchDrone` (limpet spam), `FSSSignalDiscovered` (passive sensor data), `Fileheader`, `ShipLocker`, `CarrierStatistics`. These remain in the Blackbox timeline for reference.

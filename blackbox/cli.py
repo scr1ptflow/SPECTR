@@ -13,7 +13,8 @@ from .formatter import fmt_date, fmt_time, fmt_event
 from .store import Store
 from .recorder import Recorder
 
-DB_DEFAULT = "blackbox.db"
+_PROJECT_DIR = Path(__file__).resolve().parent.parent
+DB_DEFAULT = str(_PROJECT_DIR / "blackbox.db")
 logger = logging.getLogger("blackbox")
 
 
@@ -51,8 +52,11 @@ def cmd_record(args):
     recorder = Recorder(store, Path(journal_dir), status_interval=args.status_interval)
 
     logger.info("Recording from %s", journal_dir)
-    recorder.catch_up()
-    logger.info("Catch-up complete. %d events recorded.", store.get_stats()["events"])
+    try:
+        recorder.catch_up()
+        logger.info("Catch-up complete. %d events recorded.", store.get_stats()["events"])
+    except KeyboardInterrupt:
+        logger.info("Interrupted during catch-up.")
 
     if not args.once:
         recorder.watch()

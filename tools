@@ -28,13 +28,16 @@ ensure_deps() {
     echo "Installing uvicorn..."
     "$VENV/bin/pip" install "uvicorn>=0.29.0" --quiet
   fi
+  if ! "$PYTHON" -c "import fastapi" 2>/dev/null; then
+    echo "Installing fastapi..."
+    "$VENV/bin/pip" install "fastapi>=0.100.0" --quiet
+  fi
 }
 
 check_config() {
   if [ ! -f "$DIR/config.json" ]; then
     echo ""
     echo "Config not found. Enter your Elite Dangerous journal directory path."
-    echo "Typically: ~/.steam/steam/steamapps/compatdata/359320/pfx/..."
     printf "Journal path: "
     read -r JRNL_PATH
     if [ -z "$JRNL_PATH" ]; then
@@ -68,6 +71,19 @@ PYEOF
   fi
 }
 
+ensure_db() {
+  if [ ! -f "$DIR/blackbox.db" ] && [ -f "$DIR/config.json" ]; then
+    if JRNL=$(python3 -c "
+import json
+cfg = json.load(open('$DIR/config.json'))
+print(cfg.get('journal_path', ''))
+" 2>/dev/null) && [ -n "$JRNL" ]; then
+      echo "No blackbox.db found. Scanning journals..."
+      "$PYTHON" -m blackbox record --once --journal-dir "$JRNL" 2>&1 || true
+    fi
+  fi
+}
+
 show_menu() {
   echo "SPECTR — Elite Dangerous Tool Suite"
   echo ""
@@ -84,6 +100,7 @@ if [ $# -gt 0 ]; then
   ensure_venv
   ensure_deps
   check_config
+  ensure_db
   TOOL="$1"
   shift
   case "$TOOL" in
@@ -102,7 +119,8 @@ fi
 
 ensure_venv
 ensure_deps
-check_config
+check_config     # creates config.json if missing
+ensure_db        # populate blackbox.db from journals if absent
 
 while true; do
   show_menu
@@ -112,8 +130,8 @@ while true; do
     1)   exec "$PYTHON" -m blackbox ;;
     2)   exec "$PYTHON" -m long_range_sensor ;;
     3)   exec "$VENV/bin/uvicorn" webui.server:app --host 0.0.0.0 --port 8000 ;;
-     4)   exec "$PYTHON" -m ship_status ;;
-     5)   exec "$PYTHON" -m missions ;;
-     *)   echo "Invalid choice"; echo ;;
+    4)   exec "$PYTHON" -m ship_status ;;
+    5)   exec "$PYTHON" -m missions ;;
+    *)   echo "Invalid choice"; echo ;;
   esac
 done

@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -27,8 +28,18 @@ class Recorder:
 
     def catch_up(self):
         """Read all existing journal files."""
-        for jf in sorted(self.journal_dir.glob("Journal.*.log"), key=os.path.getmtime):
+        files = sorted(self.journal_dir.glob("Journal.*.log"), key=os.path.getmtime)
+        total = len(files)
+        for i, jf in enumerate(files, 1):
+            name = jf.name
+            sys.stderr.write(f"\r  [{i}/{total}] {name}...")
+            sys.stderr.flush()
+            before = self.store.get_stats()["events"]
             self._read_journal(str(jf))
+            after = self.store.get_stats()["events"]
+            sys.stderr.write(f"\r  [{i}/{total}] {name}  {after - before} events\n")
+        if total:
+            sys.stderr.write(f"\r  Done — {self.store.get_stats()['events']} total events\n")
 
     def watch(self):
         """Start watching for file changes."""

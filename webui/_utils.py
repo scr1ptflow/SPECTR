@@ -4,7 +4,7 @@ import sqlite3
 
 from long_range_sensor import journal
 
-DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(DIR, "config.json")
 
 
