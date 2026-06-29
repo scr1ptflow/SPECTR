@@ -61,29 +61,31 @@ if not "%~1"=="" (
     exit /b 1
 )
 
+for /f %%a in ('echo prompt $E ^| cmd') do set "ESC=%%a"
+
 :menu
 cls
 setlocal DISABLEDELAYEDEXPANSION
-echo @@@@@@   @@@@@@@   @@@@@@@@   @@@@@@@  @@@@@@@  @@@@@@@
-echo @@@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@  @@@@@@@@
-echo !@@       @@!  @@@  @@!       !@@         @@!    @@!  @@@
-echo !@!       !@!  @!@  !@!       !@!         !@!    !@!  @!@
-echo !!@@!!    @!@@!@!   @!!!:!    !@!         @!!    @!@!!@!
-echo  !!@!!!   !!@!!!    !!!!!:    !!!         !!!    !!@!@!
-echo      !:!  !!:       !!:       :!!         !!:    !!: :!!
-echo     !:!   :!:       :!:       :!:         :!:    :!:  !:!
-echo :::: ::    ::        :: ::::   ::: :::     ::    ::   :::
-echo :: : :     :        : :: ::    :: :: :     :      :   : :
+echo %ESC%[90m@@@@@@   @@@@@@@   @@@@@@@@   @@@@@@@  @@@@@@@  @@@@@@@%ESC%[0m
+echo %ESC%[90m@@@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@  @@@@@@@@%ESC%[0m
+echo %ESC%[90m!@@       @@!  @@@  @@!       !@@         @@!    @@!  @@@%ESC%[0m
+echo %ESC%[90m!@!       !@!  @!@  !@!       !@!         !@!    !@!  @!@%ESC%[0m
+echo %ESC%[90m!!@@!!    @!@@!@!   @!!!:!    !@!         @!!    @!@!!@!%ESC%[0m
+echo %ESC%[90m !!@!!!   !!@!!!    !!!!!:    !!!         !!!    !!@!@!%ESC%[0m
+echo %ESC%[90m     !:!  !!:       !!:       :!!         !!:    !!: :!!%ESC%[0m
+echo %ESC%[90m    !:!   :!:       :!:       :!:         :!:    :!:  !:!%ESC%[0m
+echo %ESC%[90m:::: ::    ::        :: ::::   ::: :::     ::    ::   :::%ESC%[0m
+echo %ESC%[90m:: : :     :        : :: ::    :: :: :     :      :   : :%ESC%[0m
 endlocal
 echo(
-echo SPECTR — Elite Dangerous Tool Suite
+echo %ESC%[1;33mSPECTR — Elite Dangerous Tool Suite%ESC%[0m
 echo(
-echo   1) blackbox — Black Box flight recorder
-echo   2) lrs — Long Range Sensor: nearby services
-echo   3) web — Web UI server (cockpit + blackbox + ship + missions)
-echo   4) ship — Ship status: hull, shields, module health
-echo   5) missions — Mission monitor: active, failed, completed
-echo   q) Quit
+echo   1)  %ESC%[36mblackbox%ESC%[0m  — Black Box flight recorder
+echo   2)  %ESC%[32mlrs%ESC%[0m       — Long Range Sensor: nearby services
+echo   3)  %ESC%[33mweb%ESC%[0m        — Web UI server (cockpit + blackbox + ship + missions)
+echo   4)  %ESC%[34mship%ESC%[0m       — Ship status: hull, shields, module health
+echo   5)  %ESC%[35mmissions%ESC%[0m   — Mission monitor: active, failed, completed
+echo   q)  %ESC%[31mQuit%ESC%[0m
 echo(
 set /p choice="Select tool: "
 
