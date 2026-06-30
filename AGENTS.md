@@ -68,6 +68,10 @@ webui/
     server.py   — LRS API (system, check) + standalone scanner page
     static/
       index.html
+  system_map/
+    server.py   — System Map API (system info, bodies, stations, nearby nav)
+    static/
+      index.html — SVG orrery view with evenly-spaced orbits, per-body labels, info panel
 ```
 
 ## Tools (`./tools <tool>`)
@@ -122,6 +126,8 @@ webui/
 - `webui/ship_status/static/index.html` — 4-column LCARS grid: Shield/Hull | Cargo (value+items) | Finances | reserved
 - `webui/captains_log/server.py` — Captain's Log API (narrative event log by day, enriched with sessions, ship tracking, financials, milestones)
 - `webui/captains_log/static/index.html` — day-grouped narrative log with date picker, ship filter, session headers, financial ledger, first-discovery/milestone badges, live mode
+- `webui/system_map/server.py` — System Map API (system info, bodies, stations, nearby nav)
+- `webui/system_map/static/index.html` — SVG orrery view with evenly-spaced orbits, per-body labels, info panel
 
 ## Gotchas
 

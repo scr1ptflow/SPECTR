@@ -15,6 +15,7 @@ from webui.ship_status.server import sub_app as ship_status_app
 from webui.missions.server import sub_app as missions_app
 from webui.lrs.server import sub_app as lrs_app
 from webui.captains_log.server import sub_app as captains_log_app
+from webui.system_map.server import sub_app as system_map_app
 
 app = FastAPI(title="SPECTR")
 app.mount("/static", StaticFiles(directory=os.path.join(DIR, "static")), name="static")
@@ -24,6 +25,7 @@ app.mount("/ship", ship_status_app)
 app.mount("/missions", missions_app)
 app.mount("/lrs", lrs_app)
 app.mount("/captains-log", captains_log_app)
+app.mount("/system-map", system_map_app)
 
 
 @app.get("/")

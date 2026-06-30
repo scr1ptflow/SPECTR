@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — System Map</title>
+<script src="/static/shared.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #ccc;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.lcars-bar {
+  background: #ff9900;
+  height: 32px;
+  border-radius: 0 16px 16px 0;
+  margin: 0;
+  display: flex; align-items: center;
+  width: 55%;
+  flex-shrink: 0;
+  position: relative; z-index: 20;
+}
+.lcars-bar .label {
+  color: #000;
+  font-size: 1rem;
+  letter-spacing: 3px;
+  padding-left: 20px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.map-container {
+  flex: 1; position: relative; min-height: 0;
+  overflow: hidden;
+}
+#map-svg { width: 100%; height: 100%; display: block; }
+
+/* System name — top right */
+.sys-label {
+  position: absolute;
+  top: 14px; right: 18px;
+  text-align: right;
+  z-index: 15;
+  pointer-events: none;
+}
+.sys-label .sl-name {
+  font-size: 1.4rem;
+  color: #ff9900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.sys-label .sl-coords {
+  font-size: 0.6rem;
+  color: #555;
+  font-family: 'Consolas','Courier New',monospace;
+}
+.sys-label .sl-stats {
+  font-size: 0.6rem;
+  color: #00bbcc;
+  font-family: 'Segoe UI',system-ui,sans-serif;
+  margin-top: 2px;
+}
+
+/* Legend labels */
+.legend-label {
+  position: absolute;
+  font-family: 'Swiss 911','Arial Black','Impact',system-ui,sans-serif;
+  font-size: 0.7rem;
+  color: #c4b5d0;
+  z-index: 12;
+  cursor: pointer;
+  text-align: center;
+  pointer-events: auto;
+  line-height: 1.3;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  transform: translateX(-50%);
+}
+.legend-label:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+
+/* Info panel — center right */
+.info-panel {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  background: rgba(6,6,16,0.95);
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 220px;
+  max-width: 300px;
+  font-family: 'Segoe UI',system-ui,sans-serif;
+  font-size: 0.72rem;
+  color: #888;
+  line-height: 1.8;
+  display: none;
+  z-index: 18;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.7);
+}
+.info-panel.open { display: block; }
+.info-panel .ip-title {
+  font-family: 'Swiss 911','Arial Black','Impact',system-ui,sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1a1a2a;
+}
+.info-panel .ip-g { display: flex; gap: 2px 16px; flex-wrap: wrap; }
+.info-panel .ip-dt { color: #555; }
+.info-panel .ip-dd { color: #bbb; }
+.info-panel .ip-close {
+  float: right;
+  cursor: pointer;
+  color: #444;
+  font-size: 1rem;
+  line-height: 1;
+}
+.info-panel .ip-close:hover { color: #ff9900; }
+#ip-moons { margin-top: 10px; padding-top: 8px; border-top: 1px solid #1a1a2a; display: none; }
+.ip-moons-hdr { font-size: 0.6rem; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.ip-moons-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.ip-moon-item { font-size: 0.65rem; color: #44aa66; background: rgba(68,170,102,0.08); padding: 1px 6px; border-radius: 3px; cursor: pointer; }
+.ip-moon-item:hover { background: rgba(68,170,102,0.2); color: #66dd88; }
+#ip-moons .ip-moons-hdr[data-parent]:hover { color: #66dd88; }
+
+.spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #ff9900; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 80px auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error { color: #dd4444; padding: 40px; text-align: center; font-family: 'Segoe UI',system-ui,sans-serif; }
+
+@media (max-width: 700px) {
+  .lcars-bar { width: 85%; }
+  .lcars-bar .label { font-size: 0.85rem; padding-left: 14px; }
+  .sys-label { top: 10px; right: 12px; }
+  .sys-label .sl-name { font-size: 1rem; }
+  .info-panel { right: 8px; min-width: 160px; max-width: 220px; padding: 12px 14px; }
+  .legend-label { font-size: 0.55rem; }
+}
+</style>
+</head>
+<body>
+<div class="lcars-bar"><span class="label">System Map</span></div>
+<div class="map-container" id="map-container">
+  <svg id="map-svg"></svg>
+  <div class="sys-label" id="sys-label">
+    <div class="sl-name" id="sl-name">—</div>
+    <div class="sl-coords" id="sl-coords"></div>
+    <div class="sl-stats" id="sl-stats"></div>
+  </div>
+  <div class="info-panel" id="info-panel">
+    <span class="ip-close" id="ip-close">&times;</span>
+    <div class="ip-title" id="ip-title"></div>
+    <div class="ip-g" id="ip-body"></div>
+    <div id="ip-moons"></div>
+  </div>
+</div>
+<script>
+/* ------------------------------------------------------------------ */
+/*  SPECTR System Map — 2.5D Orrery View                              */
+/* ------------------------------------------------------------------ */
+
+const PERSPECTIVE = 1;
+const ORBIT_COLORS = ['#c4b5d0', '#d4c5a9'];
+
+const svg = document.getElementById('map-svg');
+const container = document.getElementById('map-container');
+const infoPanel = document.getElementById('info-panel');
+
+/* ---- State ---- */
+let allBodies = [];
+let selectedBody = null;
+
+/* ---- Name helpers ---- */
+function parentName(name) {
+  const parts = name.trim().split(' ');
+  parts.pop();
+  return parts.join(' ');
+}
+function shortName(name) {
+  const parts = name.trim().split(' ');
+  return parts[parts.length - 1];
+}
+
+/* ---- Helpers ---- */
+function degToRad(d) { return d * Math.PI / 180; }
+
+/* ---- Position computation ---- */
+function bodyAngle(index, total) {
+  if (total < 2) return 0;
+  return (index / total) * 360;
+}
+
+/* ---- Draw ---- */
+function drawMap() {
+  if (!allBodies.length) {
+    svg.innerHTML = '';
+    return;
+  }
+
+  const { width: W, height: H } = container.getBoundingClientRect();
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+  const cx = W / 2;
+  const cy = H * 0.52;
+  const maxR = Math.min(W / 2, H * 0.48) - 30;
+  const minR = 50;
+  const nonCarriers = allBodies.filter(b => b.category !== 'Carrier');
+
+  // Visible: stars + planets (server category is authoritative; moons excluded)
+  const visibleBodies = nonCarriers.filter(b =>
+    b.category === 'Star' || b.category === 'Planet'
+  );
+
+  // Build moon map for info panel
+  const moonsByPlanet = {};
+  nonCarriers.forEach(b => {
+    if (b.category === 'Moon') {
+      const pn = parentName(b.name);
+      (moonsByPlanet[pn] = moonsByPlanet[pn] || []).push(shortName(b.name));
+    }
+  });
+
+  let bodyIndex = 0;
+  let html = '<defs>';
+
+  html += '<radialGradient id="plane-grad" cx="50%" cy="50%" r="50%">';
+  html += '<stop offset="0%" stop-color="#0a0a18" stop-opacity="1"/>';
+  html += '<stop offset="100%" stop-color="#000002" stop-opacity="1"/>';
+  html += '</radialGradient>';
+
+  html += '</defs>';
+
+  // Background
+  html += '<rect width="' + W + '" height="' + H + '" fill="url(#plane-grad)"/>';
+
+  // Starfield (persistent dots)
+  if (!drawMap._dots) {
+    drawMap._dots = [];
+    for (let i = 0; i < 200; i++) {
+      drawMap._dots.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.2,
+        o: Math.random() * 0.35 + 0.05,
+      });
+    }
+  }
+  drawMap._dots.forEach(d => {
+    html += '<circle cx="' + d.x + '" cy="' + d.y + '" r="' + d.r + '" fill="#666" opacity="' + d.o + '"/>';
+  });
+
+  const mainStar = nonCarriers.find(b => b.category === 'Star' && b.distance < 3);
+
+  // Main star at center (render first so planets/other stars sit on top)
+  if (mainStar) {
+    html += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#ffffff" opacity="0.95" class="body-group" data-name="' + esc(mainStar.name) + '" style="cursor:pointer"/>';
+  }
+
+  // Orbital plane group
+  html += '<g transform="translate(' + cx + ', ' + cy + ') scale(1, ' + PERSPECTIVE + ')">';
+
+  // Orbits — evenly spaced for readability (not accurate)
+  const orbitBodies = visibleBodies.filter(b => !(b.category === 'Star' && b.distance < 3));
+  const orbitSpacing = (maxR - minR) / (orbitBodies.length + 1);
+  orbitBodies.forEach((b, idx) => {
+    const r = minR + (idx + 1) * orbitSpacing;
+    const color = ORBIT_COLORS[idx % 2];
+    html += '<circle cx="0" cy="0" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="1.2" opacity="0.35"/>';
+  });
+
+  // Bodies — evenly spaced radii matching orbit lines
+  const orbitBodyCount = orbitBodies.length;
+  bodyIndex = 0;
+  visibleBodies.forEach((b) => {
+    if (b.category === 'Star' && b.distance < 3) return;
+
+    const r = minR + (bodyIndex + 1) * orbitSpacing;
+    const angle = bodyAngle(bodyIndex, orbitBodyCount);
+    const rad = degToRad(angle);
+    const bx = r * Math.cos(rad);
+    const by = r * Math.sin(rad);
+
+    const isStar = b.category === 'Star';
+    const color = b.starColor || b.color || '#4488cc';
+    const markerR = isStar ? 10 : 6;
+
+    html += '<g class="body-group" data-name="' + esc(b.name) + '" style="cursor:pointer">';
+    html += '<circle cx="' + bx + '" cy="' + by + '" r="' + markerR + '" fill="' + color + '" opacity="0.85"/>';
+    html += '</g>';
+    bodyIndex++;
+  });
+
+  html += '</g>'; // end orbital plane
+
+  /* ---- Legend — one label per body, non-overlapping ---- */
+  const labelItems = [];
+
+  // Main star
+  if (mainStar) {
+    labelItems.push({
+      name: mainStar.name,
+      color: mainStar.starColor || '#ff9900',
+      screenX: cx,
+      screenY: cy,
+    });
+  }
+
+  // Main planets
+  bodyIndex = 0;
+  visibleBodies.forEach((b) => {
+    if (b.category === 'Star' && b.distance < 3) return;
+    const r = minR + (bodyIndex + 1) * orbitSpacing;
+    const angle = bodyAngle(bodyIndex, orbitBodyCount);
+    const rad = degToRad(angle);
+    labelItems.push({
+      name: b.name,
+      color: b.starColor || b.color || '#4488cc',
+      screenX: cx + r * Math.cos(rad),
+      screenY: cy + r * Math.sin(rad) * PERSPECTIVE,
+    });
+    bodyIndex++;
+  });
+
+  // Connecting lines from body up to label position
+  labelItems.forEach(item => {
+    const ly = item.screenY - 38;
+    html += '<line x1="' + item.screenX + '" y1="' + ly + '" x2="' + item.screenX + '" y2="' + (item.screenY - 4) + '" stroke="#d4c5a9" stroke-width="0.7" opacity="0.25"/>';
+  });
+
+  // Render labels directly above each body
+  document.querySelectorAll('.legend-label').forEach(el => el.remove());
+
+  const LABEL_OFFSET = 38;
+
+  labelItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'legend-label';
+    div.style.left = item.screenX + 'px';
+    div.style.top = (item.screenY - LABEL_OFFSET) + 'px';
+    div.dataset.name = item.name;
+    div.textContent = shortName(item.name);
+    div.addEventListener('click', function() {
+      const body = allBodies.find(b => b.name === this.dataset.name);
+      if (body) selectBody(body);
+    });
+    container.appendChild(div);
+  });
+
+  svg.innerHTML = html;
+  attachEvents();
+}
+
+/* ---- Events ---- */
+function attachEvents() {
+  document.querySelectorAll('.body-group').forEach(el => {
+    el.addEventListener('click', function() {
+      const name = this.dataset.name;
+      const body = allBodies.find(b => b.name === name);
+      if (body) selectBody(body);
+    });
+  });
+}
+
+function selectBody(body) {
+  if (selectedBody && selectedBody.name === body.name) {
+    selectedBody = null;
+    infoPanel.classList.remove('open');
+    drawMap();
+    return;
+  }
+  selectedBody = body;
+
+  const pieces = [];
+  if (body.category === 'Star' && body.starType) pieces.push(body.starType);
+  if (body.subType && body.subType !== body.category) pieces.push(body.subType);
+  const typeStr = pieces.join(' ') || body.category;
+
+  const color = body.starColor || body.color || '#555';
+  document.getElementById('ip-title').innerHTML =
+    '<span style="color:' + color + '">' + esc(body.name) + '</span>' +
+    ' <span style="color:#555;font-size:0.65rem;font-weight:400">' + esc(typeStr) + '</span>';
+
+  const items = [
+    ['Category', body.category],
+    ['Distance', body.distance.toLocaleString() + ' ls'],
+  ];
+  if (body.radius != null && body.radius > 0) items.push(['Radius', Number(body.radius).toLocaleString() + ' km']);
+  if (body.gravity != null) items.push(['Gravity', Number(body.gravity).toFixed(2) + ' g']);
+  if (body.surfaceTemp != null) items.push(['Surface Temp', Number(body.surfaceTemp).toLocaleString() + ' K']);
+  if (body.atmosphere) items.push(['Atmosphere', body.atmosphere]);
+  if (body.isLandable) items.push(['Landable', 'Yes']);
+  if (body.tidallyLocked) items.push(['Tidally Locked', 'Yes']);
+  if (body.terraformingState) items.push(['Terraforming', body.terraformingState]);
+  if (body.orbitalPeriod != null && body.orbitalPeriod > 0) {
+    items.push(['Orbital Period', (body.orbitalPeriod / 86400).toFixed(1) + ' d']);
+  }
+  if (body.semiMajorAxis != null) items.push(['Semi-Major Axis', Number(body.semiMajorAxis).toLocaleString() + ' ls']);
+  if (body.eccentricity != null) items.push(['Eccentricity', body.eccentricity.toFixed(4)]);
+  if (body.stellarMass != null) items.push(['Stellar Mass', body.stellarMass.toFixed(2) + ' M\u2609']);
+  if (body.stationType) items.push(['Station Type', body.stationType]);
+  if (body.allegiance) items.push(['Allegiance', body.allegiance]);
+  if (body.economy) items.push(['Economy', body.economy]);
+  if (body.government) items.push(['Government', body.government]);
+  if (body.pad) items.push(['Max Pad', body.pad]);
+  if (body.rotationalPeriod != null && body.rotationalPeriod > 0) {
+    items.push(['Rotational Period', (body.rotationalPeriod / 3600).toFixed(1) + ' h']);
+  }
+
+  document.getElementById('ip-body').innerHTML = items.map(p =>
+    '<span class="ip-dt">' + esc(p[0]) + ':</span> <span class="ip-dd">' + esc(p[1]) + '</span>'
+  ).join('');
+
+  // Moons list — clickable, or back-link when viewing a moon
+  const moonsDiv = document.getElementById('ip-moons');
+  if (body.category === 'Moon') {
+    const par = parentName(body.name);
+    moonsDiv.innerHTML =
+      '<div class="ip-moons-hdr" style="cursor:pointer" data-parent="' + esc(par) + '">\u2190 ' + esc(shortName(par)) + '</div>';
+    moonsDiv.style.display = 'block';
+    moonsDiv.querySelector('.ip-moons-hdr').addEventListener('click', function() {
+      const parent = allBodies.find(b => b.name === this.dataset.parent);
+      if (parent) selectBody(parent);
+    });
+  } else {
+    const planetMoons = allBodies.filter(b => b.category === 'Moon' && parentName(b.name) === body.name);
+    if (planetMoons.length) {
+      moonsDiv.innerHTML =
+        '<div class="ip-moons-hdr">Moons</div>' +
+        '<div class="ip-moons-list">' +
+        planetMoons.map(m =>
+          '<span class="ip-moon-item" data-name="' + esc(m.name) + '">' + esc(shortName(m.name)) + '</span>'
+        ).join('') +
+        '</div>';
+      moonsDiv.style.display = 'block';
+      moonsDiv.querySelectorAll('.ip-moon-item').forEach(el => {
+        el.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const moon = allBodies.find(b => b.name === this.dataset.name);
+          if (moon) selectBody(moon);
+        });
+      });
+    } else {
+      moonsDiv.style.display = 'none';
+    }
+  }
+
+  infoPanel.classList.add('open');
+  drawMap();
+}
+
+/* ---- Init ---- */
+async function load() {
+  const r = await fetch('api/system');
+  const sys = await r.json();
+  if (!sys.ok) {
+    svg.innerHTML = '<text x="400" y="300" fill="#dd4444" font-family="Segoe UI,sans-serif" font-size="14" text-anchor="middle">' + esc(sys.error) + '</text>';
+    return;
+  }
+  document.getElementById('sl-name').textContent = sys.system;
+  if (sys.coords) {
+    const c = sys.coords;
+    document.getElementById('sl-coords').textContent = '(' + c.x.toFixed(2) + ', ' + c.y.toFixed(2) + ', ' + c.z.toFixed(2) + ')';
+  }
+
+  const br = await fetch('api/bodies');
+  const data = await br.json();
+  if (!data.ok) {
+    svg.innerHTML = '<text x="400" y="300" fill="#dd4444" font-family="Segoe UI,sans-serif" font-size="14" text-anchor="middle">' + esc(data.error) + '</text>';
+    return;
+  }
+
+  allBodies = data.bodies || [];
+
+  const statsEl = document.getElementById('sl-stats');
+  statsEl.textContent = allBodies.length + ' objects';
+
+  const nr = await fetch('api/nav');
+  const nav = await nr.json();
+  if (nav.ok && nav.nearby) {
+    statsEl.textContent = allBodies.length + ' objects \u00B7 ' + nav.nearby.length + ' nearby';
+  }
+
+  document.getElementById('ip-close').addEventListener('click', function() {
+    selectedBody = null;
+    infoPanel.classList.remove('open');
+    drawMap();
+  });
+
+  drawMap();
+}
+
+const ro = new ResizeObserver(drawMap);
+ro.observe(container);
+load();
+</script>
+</body>
+</html>

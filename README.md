@@ -27,10 +27,11 @@ Runs a single server with a tabbed sidebar shell at `/cockpit/` and mounted sub-
 | `/missions/` | missions | Active/failed/complete missions with kill progress |
 | `/lrs/` | lrs | Long Range Scanner — standalone scan page |
 | `/captains-log/` | captains_log | Day-grouped narrative event log with date picker and sidebar |
+| `/system-map/` | system_map | SVG orrery view with evenly-spaced orbits, per-body labels, info panel |
 
 Swagger API docs at `/cockpit/docs`, `/blackbox/docs`, `/lrs/docs`, and `/captains-log/docs`.
 
-The cockpit sidebar includes tabs for **Ship**, **Missions**, **LRS**, **Flight Recorder**, and **Captains Log**.
+The cockpit sidebar includes tabs for **Ship**, **Missions**, **LRS**, **Flight Recorder**, **Captains Log**, and **System Map**.
 
 ## blackbox — Flight Recorder
 

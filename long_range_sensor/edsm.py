@@ -56,3 +56,11 @@ class EdsmClient:
         if isinstance(data, dict) and "stations" in data:
             return data["stations"]
         return []
+
+    def system_bodies(self, name):
+        data = self._get("https://www.edsm.net/api-system-v1", "bodies", {
+            "systemName": name,
+        })
+        if isinstance(data, dict) and "bodies" in data:
+            return data["bodies"]
+        return []
