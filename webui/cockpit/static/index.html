@@ -100,17 +100,21 @@
 
 <div class="sidebar">
   <div class="brand">SPECTR</div>
-  <div class="tab active" data-tool="ship">Ship</div>
+  <div class="tab active" data-tool="system-map">System Map</div>
+  <div class="tab" data-tool="ship">Ship</div>
   <div class="tab" data-tool="missions">Missions</div>
   <div class="tab" data-tool="lrs">LRS</div>
-  <div class="tab" data-tool="system-map">System Map</div>
   <div class="tab" data-tool="blackbox">Flight Recorder</div>
   <div class="tab" data-tool="captains-log">Captains Log</div>
 </div>
 
 <div class="main">
 
-  <div class="tool-panel active" id="panel-ship">
+  <div class="tool-panel active" id="panel-system-map">
+    <iframe src="/system-map/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-ship">
     <iframe src="/ship/"></iframe>
   </div>
 
@@ -120,10 +124,6 @@
 
   <div class="tool-panel" id="panel-lrs">
     <iframe src="/lrs/"></iframe>
-  </div>
-
-  <div class="tool-panel" id="panel-system-map">
-    <iframe src="/system-map/"></iframe>
   </div>
 
   <div class="tool-panel" id="panel-blackbox">

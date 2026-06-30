@@ -177,6 +177,7 @@ const infoPanel = document.getElementById('info-panel');
 /* ---- State ---- */
 let allBodies = [];
 let selectedBody = null;
+let currentSystem = '';
 
 /* ---- Name helpers ---- */
 function parentName(name) {
@@ -463,6 +464,7 @@ async function load() {
     svg.innerHTML = '<text x="400" y="300" fill="#dd4444" font-family="Segoe UI,sans-serif" font-size="14" text-anchor="middle">' + esc(sys.error) + '</text>';
     return;
   }
+  currentSystem = sys.system;
   document.getElementById('sl-name').textContent = sys.system;
   if (sys.coords) {
     const c = sys.coords;
@@ -498,6 +500,14 @@ async function load() {
 
 const ro = new ResizeObserver(drawMap);
 ro.observe(container);
+
+// Poll for system changes (reads journal each time via API)
+setInterval(async () => {
+  const r = await fetch('api/system');
+  const sys = await r.json();
+  if (sys.ok && sys.system !== currentSystem) load();
+}, 2000);
+
 load();
 </script>
 </body>

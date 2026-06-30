@@ -11,6 +11,28 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 sub_app = FastAPI(title="SPECTR System Map")
 
+PLANET_COLORS = {
+    "Metal rich body": "#aa8866",
+    "Rocky body": "#997755",
+    "Icy body": "#aaccff",
+    "Rocky ice world": "#88aadd",
+    "Earth-like world": "#44cc88",
+    "Water world": "#4488ff",
+    "Water giant": "#3366dd",
+    "Ammonia world": "#cc8844",
+    "Gas giant with water based life": "#88bbcc",
+    "Gas giant with ammonia based life": "#bb8844",
+    "Gas giant": "#ddaa77",
+    "High metal content world": "#bb8866",
+    "Helium rich gas giant": "#cc9977",
+    "Helium gas giant": "#ccaa88",
+    "Sudarsky class i gas giant": "#ddbb99",
+    "Sudarsky class ii gas giant": "#88bbcc",
+    "Sudarsky class iii gas giant": "#ccaa77",
+    "Sudarsky class iv gas giant": "#bb7766",
+    "Sudarsky class v gas giant": "#aa5544",
+}
+
 STAR_CLASS_COLORS = {
     "O": "#9bb0ff", "B": "#aabfff", "A": "#dae8ff",
     "F": "#f8f7ff", "G": "#fff4e8", "K": "#ffd2a1",
@@ -54,6 +76,16 @@ def _star_color(star_type: str) -> str:
         if star_type.startswith(prefix):
             return color
     return "#ffcc88"
+
+
+def _planet_color(sub_type: str) -> str:
+    """Map planet subtype to a color."""
+    if not sub_type:
+        return "#4488cc"
+    for key, color in PLANET_COLORS.items():
+        if sub_type.lower() == key.lower():
+            return color
+    return "#4488cc"
 
 
 def _body_category(body_type: str, sub_type: str = "", parents: list | None = None) -> str:
@@ -137,8 +169,8 @@ def api_bodies():
             "category": cat,
             "distance": b.get("distanceToArrival", 0),
             "starType": b.get("starType", ""),
-            "starColor": sc or BODY_COLORS.get(cat, "#555"),
-            "color": BODY_COLORS.get(cat, "#555"),
+            "starColor": sc if cat == "Star" else None,
+            "color": _planet_color(b.get("subType", "")) if cat == "Planet" else BODY_COLORS.get(cat, "#555"),
             "icon": BODY_ICONS.get(cat, "?"),
             "isLandable": b.get("isLandable", False),
             "gravity": b.get("gravity", None),
@@ -172,7 +204,7 @@ def api_bodies():
             "category": cat,
             "distance": s.get("distanceToArrival", 0),
             "starType": "",
-            "starColor": BODY_COLORS[cat],
+            "starColor": None,
             "color": BODY_COLORS[cat],
             "icon": BODY_ICONS[cat],
             "isLandable": False,
