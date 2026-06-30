@@ -39,7 +39,7 @@ STAR_CLASS_COLORS = {
     "M": "#ffb56b", "L": "#ff8f40", "T": "#ff6a2b",
     "Y": "#ff4422", "TTS": "#ff6633", "AeBe": "#ffccaa",
     "W": "#cceeff", "WN": "#cceeff", "WNC": "#cceeff",
-    "WC": "#ddddff", "WO": "#eeeef", "C": "#ffcccc",
+    "WC": "#ddddff", "WO": "#eeeeef", "C": "#ffcccc",
     "CS": "#ffcccc", "CN": "#ffcccc", "H": "#ffffff",
     "MS": "#ffcccc", "S": "#ff8866", "D": "#ffffff",
     "WhiteDwarf": "#eef6ff", "NeutronStar": "#66ddff",

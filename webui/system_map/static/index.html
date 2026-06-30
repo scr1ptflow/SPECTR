@@ -480,14 +480,8 @@ async function load() {
 
   allBodies = data.bodies || [];
 
-  const statsEl = document.getElementById('sl-stats');
-  statsEl.textContent = allBodies.length + ' objects';
-
-  const nr = await fetch('api/nav');
-  const nav = await nr.json();
-  if (nav.ok && nav.nearby) {
-    statsEl.textContent = allBodies.length + ' objects \u00B7 ' + nav.nearby.length + ' nearby';
-  }
+  const starsPlanets = allBodies.filter(b => b.category === 'Star' || b.category === 'Planet' || b.category === 'Moon');
+  document.getElementById('sl-stats').textContent = starsPlanets.length + ' objects';
 
   document.getElementById('ip-close').addEventListener('click', function() {
     selectedBody = null;

@@ -28,7 +28,7 @@ long_range_sensor/
   cli.py        — argparse CLI: check (exobiology)
   journal.py    — reads current system from latest journal file
   edsm.py       — EDSM API client (system info, sphere search, station lookup)
-   checkers.py   — extensible check registry + exobiology checker
+  checkers.py   — extensible check registry + exobiology checker
 missions/
   __init__.py   — package metadata
   __main__.py   — `python -m missions`

@@ -109,7 +109,7 @@ if [ $# -gt 0 ]; then
   case "$TOOL" in
     blackbox) exec "$PYTHON" -m blackbox "$@" ;;
     lrs)      exec "$PYTHON" -m long_range_sensor "$@" ;;
-    web)      exec "$VENV/bin/uvicorn" webui.server:app --host 0.0.0.0 --port 8000 "$@" ;;
+    web)      exec "$PYTHON" -m uvicorn webui.server:app --host 0.0.0.0 --port 8000 "$@" ;;
     ship)     exec "$PYTHON" -m ship_status "$@" ;;
     missions) exec "$PYTHON" -m missions "$@" ;;
     *)
@@ -133,7 +133,7 @@ while true; do
     q|Q) echo "Bye."; exit 0 ;;
     1)   exec "$PYTHON" -m blackbox ;;
     2)   exec "$PYTHON" -m long_range_sensor ;;
-    3)   exec "$VENV/bin/uvicorn" webui.server:app --host 0.0.0.0 --port 8000 ;;
+    3)   exec "$PYTHON" -m uvicorn webui.server:app --host 0.0.0.0 --port 8000 ;;
     4)   exec "$PYTHON" -m ship_status ;;
     5)   exec "$PYTHON" -m missions ;;
     *)   echo "Invalid choice"; echo ;;
