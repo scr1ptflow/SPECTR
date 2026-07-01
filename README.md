@@ -3,6 +3,7 @@
 ```
 ./tools                     interactive menu
 ./tools blackbox <command>  run blackbox directly
+./tools config              edit journal path, Inara/EDSM API keys
 ./tools lrs <command>       run lrs directly
 ./tools web [--port 8000]   start Web UI server
 ./tools ship                show ship hull, shields, module health
@@ -28,10 +29,11 @@ Runs a single server with a tabbed sidebar shell at `/cockpit/` and mounted sub-
 | `/lrs/` | lrs | Long Range Scanner — standalone scan page |
 | `/captains-log/` | captains_log | Day-grouped narrative event log with date picker and sidebar |
 | `/system-map/` | system_map | SVG orrery view with evenly-spaced orbits, per-body labels, info panel |
+| `/navigation/` | spansh_route | Route table with auto 3-state exobiology ticks from blackbox DB |
 
 Swagger API docs at `/cockpit/docs`, `/blackbox/docs`, `/lrs/docs`, and `/captains-log/docs`.
 
-The cockpit sidebar includes tabs for **Ship**, **Missions**, **LRS**, **Flight Recorder**, **Captains Log**, and **System Map**.
+The cockpit sidebar includes tabs for **Ship**, **Missions**, **LRS**, **Flight Recorder**, **Captains Log**, **System Map**, and **Navigation**.
 
 ## blackbox — Flight Recorder
 
@@ -125,3 +127,34 @@ Web UI at /captains-log/
 - **Live mode** — toggle to show today's events with 2s auto-refresh and auto-scroll
 - Left sidebar with available days, date picker, Today and All buttons
 - Filters out operational noise: `LaunchDrone` (limpet spam), `FSSSignalDiscovered` (passive sensor data), `Fileheader`, `ShipLocker`, `CarrierStatistics`. These remain in the Blackbox timeline for reference.
+
+## navigation — Route Tracker
+
+Automatically tracks exobiology sampling progress per body from journal data.
+
+```
+Web UI at /navigation/
+```
+
+- Upload a Spansh CSV route or load from server cache (`navigation_cache/route.csv`)
+- Each row gets a 3-state tick indicator:
+  - **Red** — body not yet scanned
+  - **Yellow** — scanned, biological signals detected (partial)
+  - **Green** — scanned, no biological signals (complete)
+- Ticks are automatic — reads `Scan`, `SAASignalsFound`, `BuyOrganicData`, and `SellOrganicData` events from the blackbox DB
+- Progress bar shows complete / partial / pending counts
+- Polls every 30s for updated status
+- Server-side CSV cache survives browser storage clears
+
+## config — Configuration
+
+```
+./tools config
+```
+
+Interactive submenu to set or update:
+1. **Journal path** — your Elite Dangerous journal directory
+2. **Inara API key** (optional)
+3. **EDSM API key** (optional)
+
+Also accessible via `c` in the interactive menu.

@@ -167,7 +167,7 @@ body {
 /*  SPECTR System Map — 2.5D Orrery View                              */
 /* ------------------------------------------------------------------ */
 
-const PERSPECTIVE = 1;
+const PERSPECTIVE = 0.5;
 const ORBIT_COLORS = ['#c4b5d0', '#d4c5a9'];
 
 const svg = document.getElementById('map-svg');
@@ -194,9 +194,12 @@ function shortName(name) {
 function degToRad(d) { return d * Math.PI / 180; }
 
 /* ---- Position computation ---- */
-function bodyAngle(index, total) {
-  if (total < 2) return 0;
-  return (index / total) * 360;
+function bodyAngle(name) {
+  if (!drawMap._bodyAngles) drawMap._bodyAngles = {};
+  if (drawMap._bodyAngles[name] == null) {
+    drawMap._bodyAngles[name] = Math.random() * 360;
+  }
+  return drawMap._bodyAngles[name];
 }
 
 /* ---- Draw ---- */
@@ -261,13 +264,14 @@ function drawMap() {
 
   // Main star at center (render first so planets/other stars sit on top)
   if (mainStar) {
-    html += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#ffffff" opacity="0.95" class="body-group" data-name="' + esc(mainStar.name) + '" style="cursor:pointer"/>';
+    html += '<g class="body-group" data-name="' + esc(mainStar.name) + '" style="cursor:pointer">';
+    html += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#ffffff" opacity="0.95"/>';
+    html += '</g>';
   }
 
-  // Orbital plane group
+  // Orbital plane — orbits only (perspective-squished)
   html += '<g transform="translate(' + cx + ', ' + cy + ') scale(1, ' + PERSPECTIVE + ')">';
 
-  // Orbits — evenly spaced for readability (not accurate)
   const orbitBodies = visibleBodies.filter(b => !(b.category === 'Star' && b.distance < 3));
   const orbitSpacing = (maxR - minR) / (orbitBodies.length + 1);
   orbitBodies.forEach((b, idx) => {
@@ -276,17 +280,19 @@ function drawMap() {
     html += '<circle cx="0" cy="0" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="1.2" opacity="0.35"/>';
   });
 
-  // Bodies — evenly spaced radii matching orbit lines
+  html += '</g>'; // end orbital plane
+
+  // Bodies — rendered outside perspective group so they stay round
   const orbitBodyCount = orbitBodies.length;
   bodyIndex = 0;
   visibleBodies.forEach((b) => {
     if (b.category === 'Star' && b.distance < 3) return;
 
     const r = minR + (bodyIndex + 1) * orbitSpacing;
-    const angle = bodyAngle(bodyIndex, orbitBodyCount);
+    const angle = bodyAngle(b.name);
     const rad = degToRad(angle);
-    const bx = r * Math.cos(rad);
-    const by = r * Math.sin(rad);
+    const bx = cx + r * Math.cos(rad);
+    const by = cy + r * Math.sin(rad) * PERSPECTIVE;
 
     const isStar = b.category === 'Star';
     const color = b.starColor || b.color || '#4488cc';
@@ -297,8 +303,6 @@ function drawMap() {
     html += '</g>';
     bodyIndex++;
   });
-
-  html += '</g>'; // end orbital plane
 
   /* ---- Legend — one label per body, non-overlapping ---- */
   const labelItems = [];
@@ -318,7 +322,7 @@ function drawMap() {
   visibleBodies.forEach((b) => {
     if (b.category === 'Star' && b.distance < 3) return;
     const r = minR + (bodyIndex + 1) * orbitSpacing;
-    const angle = bodyAngle(bodyIndex, orbitBodyCount);
+    const angle = bodyAngle(b.name);
     const rad = degToRad(angle);
     labelItems.push({
       name: b.name,

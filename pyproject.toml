@@ -3,7 +3,7 @@ name = "spectr-blackbox"
 version = "0.1.0"
 description = "Elite Dangerous tool suite"
 requires-python = ">=3.10"
-dependencies = ["watchdog>=4.0.0", "fastapi>=0.100.0", "uvicorn>=0.29.0"]
+dependencies = ["watchdog>=4.0.0", "fastapi>=0.100.0", "uvicorn>=0.29.0", "python-multipart>=0.0.9"]
 
 [tool.setuptools.packages.find]
 include = ["blackbox*", "long_range_sensor*", "missions*", "ship_status*", "webui*"]

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — Navigation</title>
+<script src="/static/shared.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #ccc;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  padding: 20px;
+  min-height: 100vh;
+}
+.lcars-bar {
+  background: #ff9900;
+  height: 32px;
+  border-radius: 0 16px 16px 0;
+  margin: 0 0 20px;
+  display: flex; align-items: center;
+  width: 55%;
+}
+.lcars-bar .label {
+  color: #000;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  padding-left: 24px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.top-row .info {
+  color: #555;
+  font-size: 0.7rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.btn {
+  padding: 8px 20px;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0 10px 10px 10px;
+  cursor: pointer;
+  color: #000;
+  transition: opacity 0.15s;
+}
+.btn:active { opacity: 0.7; }
+.btn.browse { background: #4488cc; }
+.btn.clear { background: #555; }
+
+/* Progress bar */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.progress-bar {
+  flex: 1;
+  height: 14px;
+  background: #0a0a14;
+  border-radius: 0 7px 7px 7px;
+  overflow: hidden;
+  border: 1px solid #1a1a2a;
+}
+.progress-fill {
+  height: 100%;
+  background: #44aa66;
+  border-radius: 0 7px 7px 7px;
+  transition: width 0.3s;
+  min-width: 0;
+}
+.progress-label {
+  color: #888;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.wrapper {
+  overflow-x: auto;
+  border: 1px solid #1a1a2a;
+  border-radius: 0 8px 8px 8px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.78rem;
+  user-select: text;
+  -webkit-user-select: text;
+}
+th {
+  background: #0a0a14;
+  color: #ff9900;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #2a2a4a;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #0f0f1a;
+  color: #aaa;
+}
+tr:hover td { background: #0a0a14; }
+tr:last-child td { border-bottom: none; }
+
+/* Tick column */
+th.tick-col, td.tick-col { width: 36px; text-align: center; padding: 6px 4px; }
+.tick-btn {
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  padding: 2px;
+  transition: transform 0.1s;
+  display: inline-block;
+}
+.tick-btn:hover { transform: scale(1.3); }
+
+.empty { color: #555; text-align: center; padding: 60px 0; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.85rem; }
+.error { color: #dd4444; padding: 12px 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+.spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #ff9900; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 40px auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#status-bar {
+  margin-top: 12px;
+  color: #555;
+  font-size: 0.7rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (max-width: 700px) {
+  body { padding: 10px; }
+  .lcars-bar { width: 90%; }
+  .lcars-bar .label { font-size: 0.9rem; padding-left: 16px; }
+  th, td { padding: 6px 8px; font-size: 0.7rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="lcars-bar"><span class="label">Navigation</span></div>
+
+<div class="top-row">
+  <button class="btn browse" onclick="document.getElementById('file-picker').click()">Browse</button>
+  <input type="file" accept=".csv" id="file-picker" style="display:none">
+  <button class="btn clear" onclick="clearRoute()">Clear</button>
+  <span class="info" id="file-info"></span>
+</div>
+
+<div class="progress-wrap" id="progress-wrap" style="display:none">
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <span class="progress-label" id="progress-label">0 / 0 visited</span>
+</div>
+
+<div id="table-container">
+  <div class="empty">Click Browse to select a route CSV file.</div>
+</div>
+
+<div id="status-bar"></div>
+
+<script>
+const LS_COLS = 'nav_columns';
+const LS_ROWS = 'nav_rows';
+const LS_VISITED = 'nav_visited';
+
+const STATUS_KEYS = ['not_visited', 'partial', 'complete'];
+const STATUS_COLORS = ['#dd3333', '#dddd33', '#33dd66'];
+const STATUS_LABELS = ['Not Visited', 'Partial', 'Complete'];
+const STATUS_ICONS = ['\u25CB', '\u25D0', '\u25CF'];
+
+let columns = [];
+let rows = [];
+let visited = {};
+let systemCol = 'System';
+let landmarkCol = '';
+
+function detectLandmarkCol() {
+  const candidates = ['Body', 'Landmark', 'Subtype', 'Body Type', 'Type', 'Name'];
+  for (const c of candidates) {
+    if (columns.includes(c)) { landmarkCol = c; return; }
+    const lower = columns.find(x => x.toLowerCase() === c.toLowerCase());
+    if (lower) { landmarkCol = lower; return; }
+  }
+  landmarkCol = '';
+}
+
+function rowKey(row) {
+  const sys = row[systemCol] || '';
+  const lm = landmarkCol ? (row[landmarkCol] || '') : '';
+  return lm ? sys + '||' + lm : sys;
+}
+
+function rowBodyName(row) {
+  if (landmarkCol) return row[landmarkCol] || '';
+  return row[systemCol] || '';
+}
+
+function parseCSV(text) {
+  const lines = [[]];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        lines[lines.length - 1].push(current);
+        current = '';
+      } else if (ch === '\n') {
+        lines[lines.length - 1].push(current);
+        current = '';
+        lines.push([]);
+      } else if (ch === '\r') {
+      } else {
+        current += ch;
+      }
+    }
+  }
+  lines[lines.length - 1].push(current);
+  if (lines.length > 1 && lines[lines.length - 1].length === 1 && lines[lines.length - 1][0] === '') {
+    lines.pop();
+  }
+  return lines.filter(l => l.length > 0);
+}
+
+function saveVisited() {
+  try { localStorage.setItem(LS_VISITED, JSON.stringify(visited)); } catch (_) {}
+}
+
+function loadVisited() {
+  try {
+    const v = localStorage.getItem(LS_VISITED);
+    if (v) visited = JSON.parse(v);
+  } catch (_) {}
+}
+
+function detectSystemCol() {
+  if (columns.includes('System')) { systemCol = 'System'; return; }
+  const lower = columns.find(c => c.toLowerCase() === 'system');
+  if (lower) { systemCol = lower; return; }
+  const star = columns.find(c => c.toLowerCase().includes('system'));
+  if (star) { systemCol = star; return; }
+  systemCol = columns[0] || '';
+}
+
+function renderTable() {
+  const container = document.getElementById('table-container');
+  const pw = document.getElementById('progress-wrap');
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty">Click Browse to select a route CSV file.</div>';
+    pw.style.display = 'none';
+    document.getElementById('status-bar').textContent = '';
+    return;
+  }
+
+  pw.style.display = 'flex';
+  updateProgress();
+
+  let html = '<div class="wrapper"><table><thead><tr>';
+  html += '<th class="tick-col"></th>';
+  for (const col of columns) {
+    html += '<th>' + esc(col) + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const key = rowKey(row);
+    const st = STATUS_KEYS.indexOf(visited[key]);
+    const status = st >= 0 ? st : 0;
+    html += '<tr data-idx="' + i + '">';
+    html += '<td class="tick-col"><span class="tick-btn" style="color:' + STATUS_COLORS[status] + '">' + STATUS_ICONS[status] + '</span></td>';
+    for (const col of columns) {
+      const cls = col === systemCol ? 'name-col' : '';
+      html += '<td class="' + cls + '">' + esc(row[col] || '') + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+
+  updateStatusBar();
+}
+
+function updateStatusBar() {
+  let notVisited = 0, partial = 0, complete = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const key = rowKey(rows[i]);
+    const st = STATUS_KEYS.indexOf(visited[key]);
+    const s = st >= 0 ? st : 0;
+    if (s === 0) notVisited++;
+    else if (s === 1) partial++;
+    else complete++;
+  }
+  const parts = [rows.length + ' entries'];
+  if (complete) parts.push(complete + ' \u2713');
+  if (partial) parts.push(partial + ' \u25D0');
+  if (notVisited) parts.push(notVisited + ' \u25CB');
+  document.getElementById('status-bar').textContent = parts.join('  |  ');
+}
+
+function updateProgress() {
+  const total = rows.length;
+  if (!total) { document.getElementById('progress-wrap').style.display = 'none'; return; }
+  let notVisited = 0, partial = 0, complete = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const key = rowKey(rows[i]);
+    const st = STATUS_KEYS.indexOf(visited[key]);
+    const s = st >= 0 ? st : 0;
+    if (s === 0) notVisited++;
+    else if (s === 1) partial++;
+    else complete++;
+  }
+  const done = complete + partial * 0.5;
+  const pct = total ? (done / total * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = complete + ' complete, ' + partial + ' partial, ' + notVisited + ' pending';
+}
+
+async function fetchExoStatus() {
+  if (!rows.length) return;
+  const keys = rows.map(row => rowKey(row)).filter(Boolean);
+  if (!keys.length) return;
+  try {
+    const r = await fetch('api/exo-status?keys=' + encodeURIComponent(keys.join(',')));
+    const res = await r.json();
+    if (!res.ok) return;
+    let changed = false;
+    for (let i = 0; i < rows.length; i++) {
+      const key = rowKey(rows[i]);
+      if (!key) continue;
+      const status = res.status[key];
+      if (!status) continue;
+      const st = STATUS_KEYS.indexOf(status);
+      if (st >= 0) {
+        const cur = STATUS_KEYS.indexOf(visited[key]);
+        if (cur !== st) {
+          visited[key] = status;
+          changed = true;
+        }
+      }
+    }
+    if (changed) { saveVisited(); renderTable(); }
+  } catch (_) {}
+}
+
+function loadData(newColumns, newRows, mergeVisited) {
+  columns = newColumns;
+  rows = newRows;
+  if (!mergeVisited) visited = {};
+  detectSystemCol();
+  detectLandmarkCol();
+  renderTable();
+  fetchExoStatus();
+}
+
+function clearRoute() {
+  columns = [];
+  rows = [];
+  visited = {};
+  try {
+    localStorage.removeItem(LS_COLS);
+    localStorage.removeItem(LS_ROWS);
+    localStorage.removeItem(LS_VISITED);
+  } catch (_) {}
+  fetch('api/upload', { method: 'DELETE' }).catch(function(){});
+  renderTable();
+  document.getElementById('file-info').textContent = '';
+}
+
+async function loadRoute() {
+  const params = new URLSearchParams(window.location.search);
+  const path = params.get('path');
+  if (!path) return;
+
+  document.getElementById('table-container').innerHTML = '<span class="spinner"></span>';
+
+  const r = await fetch('api/route?path=' + encodeURIComponent(path));
+  const res = await r.json();
+
+  if (!res.ok) {
+    document.getElementById('table-container').innerHTML = '<div class="error">' + esc(res.error) + '</div>';
+    return;
+  }
+
+  document.getElementById('file-info').textContent = res.file + ' — ' + res.total + ' systems';
+  loadVisited();
+  loadData(res.columns, res.rows, true);
+}
+
+/* --- Init --- */
+(async function init() {
+  // Try server cache first
+  try {
+    const r = await fetch('api/cached');
+    const res = await r.json();
+    if (res.ok && res.cached && res.rows.length) {
+      document.getElementById('file-info').textContent = res.file + ' — ' + res.total + ' systems';
+      loadVisited();
+      loadData(res.columns, res.rows, true);
+      return;
+    }
+  } catch (_) {}
+
+  // Fallback to localStorage
+  try {
+    const c = localStorage.getItem(LS_COLS);
+    const r = localStorage.getItem(LS_ROWS);
+    if (c && r) {
+      columns = JSON.parse(c);
+      rows = JSON.parse(r);
+      loadVisited();
+      detectSystemCol();
+      detectLandmarkCol();
+      renderTable();
+      fetchExoStatus();
+    }
+  } catch (_) {}
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('path')) loadRoute();
+})();
+
+document.getElementById('file-picker').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  document.getElementById('file-info').textContent = file.name + ' (' + file.size + ' bytes)';
+  document.getElementById('table-container').innerHTML = '<span class="spinner"></span>';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  fetch('api/upload', { method: 'POST', body: formData })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (!res.ok) {
+        document.getElementById('table-container').innerHTML = '<div class="error">' + esc(res.error) + '</div>';
+        return;
+      }
+      document.getElementById('file-info').textContent = res.file + ' — ' + res.total + ' systems';
+      loadVisited();
+      loadData(res.columns, res.rows, true);
+      try {
+        localStorage.setItem(LS_COLS, JSON.stringify(res.columns));
+        localStorage.setItem(LS_ROWS, JSON.stringify(res.rows));
+      } catch (_) {}
+    })
+    .catch(function(err) {
+      document.getElementById('table-container').innerHTML = '<div class="error">' + esc(err) + '</div>';
+    });
+
+  this.value = '';
+});
+
+// Refresh exo status every 30s
+fetchExoStatus();
+setInterval(fetchExoStatus, 30000);
+</script>
+</body>
+</html>

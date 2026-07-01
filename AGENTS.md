@@ -11,7 +11,7 @@ Python CLI tools for Elite Dangerous, sharing a venv and config.
 - **Package:** `spectr-blackbox` v0.1.0
 - **Launcher:** `./tools` creates venv, installs deps, dispatches to tools
 - **Config:** `config.json` — journal path, optional Inara/EDSM API keys. Generated on first run via interactive prompts in `tools`/`tools.bat`.
-- **Python:** >=3.10, dependencies in `pyproject.toml` (`watchdog`, `fastapi`, `uvicorn`). Installed via `pip install -e .` in `ensure_deps()`.
+- **Python:** >=3.10, dependencies in `pyproject.toml` (`watchdog`, `fastapi`, `uvicorn`, `python-multipart`). Installed via `pip install -e .` in `ensure_deps()`.
 
 ## Structure
 
@@ -72,6 +72,11 @@ webui/
     server.py   — System Map API (system info, bodies, stations, nearby nav)
     static/
       index.html — SVG orrery view with evenly-spaced orbits, per-body labels, info panel
+  spansh_route/
+    __init__.py
+    server.py   — Navigation API (reads spansh CSV, returns columns + rows, exo-status endpoint for automatic exobiology tracking)
+    static/
+      index.html — table view with selectable cells, auto-load from ?path=, server-side CSV cache, 3-state auto ticks (red/yellow/green) from blackbox Scan/SAASignalsFound events
 ```
 
 ## Tools (`./tools <tool>`)
@@ -79,6 +84,7 @@ webui/
 | Tool | Entry | Description |
 |------|-------|-------------|
 | `blackbox` | `blackbox.cli:main` | Flight recorder — record, summary, log, query |
+| `config` | `tools` script | Interactive submenu for journal path, Inara/EDSM API keys |
 | `lrs` | `long_range_sensor.cli:main` | Long Range Sensor — find nearest services (exobiology, more TBD) |
 | `missions` | `missions.cli:main` | Mission monitor — list active, failed, completed |
 | `ship` | `ship_status.cli:main` | Ship status — hull, shields, module health |
@@ -128,6 +134,8 @@ webui/
 - `webui/captains_log/static/index.html` — day-grouped narrative log with date picker, ship filter, session headers, financial ledger, first-discovery/milestone badges, live mode
 - `webui/system_map/server.py` — System Map API (system info, bodies, stations, nearby nav)
 - `webui/system_map/static/index.html` — SVG orrery view with evenly-spaced orbits, per-body labels, info panel
+- `webui/spansh_route/server.py` — Navigation API (CSV cache, route loading, system polling, exobiology status)
+- `webui/spansh_route/static/index.html` — Navigation table with auto 3-state ticks (red/yellow/green) from blackbox DB
 
 ## Gotchas
 
@@ -137,3 +145,4 @@ webui/
 - Material events use `Name_Localised` (falls back to `Name` with `_cap()` first-letter capitalization).
 - Ship bulkhead Item varies by ship: `armour_*`, `int_bulkheads_*`, or `<ship>_armour_gradeN` (e.g. `lakonminer_armour_grade1`).
 - Cargo value returns None if any item has no known price; unknown items are silently skipped for total calculation.
+- Navigation exo-status auto-detection: checks blackbox DB for `Scan` events (body visited) and `SAASignalsFound` events (biological signal count). Bodies with bio signals but no matching genus/species in `BuyOrganicData`/`SellOrganicData` show as partial. Server-side cache at `navigation_cache/route.csv`.

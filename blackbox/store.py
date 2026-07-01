@@ -44,7 +44,7 @@ class Store:
     def __init__(self, db_path: str):
         self.db_path = str(db_path)
         _ensure_db(db_path)
-        self.conn = sqlite3.connect(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         _init_schema(self.conn)
 

@@ -25,39 +25,73 @@ ensure_deps() {
 
 check_config() {
   if [ ! -f "$DIR/config.json" ]; then
-    echo ""
-    echo "Config not found. Enter your Elite Dangerous journal directory path."
-    printf "Journal path: "
-    read -r JRNL_PATH
-    if [ -z "$JRNL_PATH" ]; then
-      echo "Path cannot be empty."
-      exit 1
-    fi
+    echo "Config not found. Creating..."
+    "$PYTHON" -c "import json; open('$DIR/config.json','w').write(json.dumps({'journal_path': ''}, indent=2))"
+    config_menu
+  fi
+}
 
+config_menu() {
+  local choice
+  while true; do
+    clear
+    echo -e "\033[1;33mConfiguration\033[0m"
     echo ""
-    echo "Optional: Inara API key (press Enter to skip)."
-    printf "Inara API key: "
-    read -r INARA_KEY
-
+    local jrnl=$("$PYTHON" -c "import json; print(json.load(open('$DIR/config.json')).get('journal_path',''))" 2>/dev/null || true)
+    local inara=$("$PYTHON" -c "import json; print(json.load(open('$DIR/config.json')).get('inara',{}).get('api_key','(not set)'))" 2>/dev/null || true)
+    local edsm=$("$PYTHON" -c "import json; print(json.load(open('$DIR/config.json')).get('edsm',{}).get('api_key','(not set)'))" 2>/dev/null || true)
+    echo -e "  1)  \033[36mJournal path\033[0m  — $jrnl"
+    echo -e "  2)  \033[32mInara API key\033[0m  — $inara"
+    echo -e "  3)  \033[33mEDSM API key\033[0m   — $edsm"
+    echo -e "  b)  \033[1;31mBack\033[0m"
     echo ""
-    echo "Optional: EDSM API key (press Enter to skip)."
-    printf "EDSM API key: "
-    read -r EDSM_KEY
+    read -rp "Select: " choice
+    case "$choice" in
+      b|B) return ;;
+      1) config_set journal_path "Journal path" ;;
+      2) config_set inara_key "Inara API key" ;;
+      3) config_set edsm_key "EDSM API key" ;;
+      *) echo "Invalid choice" ; sleep 1 ;;
+    esac
+  done
+}
 
-    cat > /tmp/spectr_setup.py <<PYEOF
-import json, os
-cfg = {'journal_path': os.environ['JRNL_PATH']}
-if os.environ.get('INARA_KEY'):
-    cfg['inara'] = {'api_key': os.environ['INARA_KEY'], 'api_url': 'https://api.inara.cz/v1/'}
-if os.environ.get('EDSM_KEY'):
-    cfg['edsm'] = {'api_key': os.environ['EDSM_KEY'], 'api_url': 'https://www.edsm.net/api/'}
+config_set() {
+  local key="$1" label="$2"
+  local cur=$("$PYTHON" -c "
+import json
+cfg = json.load(open('$DIR/config.json'))
+if '$key' == 'journal_path':
+    print(cfg.get('journal_path', ''))
+elif '$key' == 'inara_key':
+    print(cfg.get('inara', {}).get('api_key', ''))
+elif '$key' == 'edsm_key':
+    print(cfg.get('edsm', {}).get('api_key', ''))
+" 2>/dev/null || true)
+  echo ""
+  printf "$label [%s]: " "${cur:-(none)}"
+  read -r val
+  if [ -z "$val" ]; then
+    echo "Keeping current value."
+    sleep 1
+    return
+  fi
+  "$PYTHON" -c "
+import json
+cfg = json.load(open('$DIR/config.json'))
+if '$key' == 'journal_path':
+    cfg['journal_path'] = '$val'
+elif '$key' == 'inara_key':
+    cfg.setdefault('inara', {})['api_key'] = '$val'
+elif '$key' == 'edsm_key':
+    cfg.setdefault('edsm', {})['api_key'] = '$val'
+cfg.setdefault('inara', {}).setdefault('api_url', 'https://api.inara.cz/v1/')
+cfg.setdefault('edsm', {}).setdefault('api_url', 'https://www.edsm.net/api/')
 with open('$DIR/config.json', 'w') as f:
     json.dump(cfg, f, indent=2)
-PYEOF
-    JRNL_PATH="$JRNL_PATH" INARA_KEY="$INARA_KEY" EDSM_KEY="$EDSM_KEY" "$PYTHON" /tmp/spectr_setup.py
-    rm -f /tmp/spectr_setup.py
-    echo "Config saved to config.json"
-  fi
+"
+  echo "Updated."
+  sleep 1
 }
 
 ensure_db() {
@@ -96,6 +130,7 @@ show_menu() {
     echo -e "  $((i+1)))  ${BLD}${COLORS[$i]}$name${RST}  — $desc"
   done
   echo -e "  q)  \033[1;31mQuit\033[0m"
+  echo -e "  c)  \033[1;36mConfig\033[0m — journal, Inara, EDSM"
   echo ""
 }
 
@@ -108,13 +143,14 @@ if [ $# -gt 0 ]; then
   shift
   case "$TOOL" in
     blackbox) exec "$PYTHON" -m blackbox "$@" ;;
+    config)   config_menu ; exit 0 ;;
     lrs)      exec "$PYTHON" -m long_range_sensor "$@" ;;
     web)      exec "$PYTHON" -m uvicorn webui.server:app --host 0.0.0.0 --port 8000 "$@" ;;
     ship)     exec "$PYTHON" -m ship_status "$@" ;;
     missions) exec "$PYTHON" -m missions "$@" ;;
     *)
       echo "Unknown tool: $TOOL"
-      echo "Available: blackbox, lrs, web, ship, missions"
+      echo "Available: blackbox, config, lrs, web, ship, missions"
       exit 1
       ;;
   esac
@@ -131,6 +167,7 @@ while true; do
   read -rp "Select tool: " choice
   case "$choice" in
     q|Q) echo "Bye."; exit 0 ;;
+    c|C) config_menu ;;
     1)   exec "$PYTHON" -m blackbox ;;
     2)   exec "$PYTHON" -m long_range_sensor ;;
     3)   exec "$PYTHON" -m uvicorn webui.server:app --host 0.0.0.0 --port 8000 ;;

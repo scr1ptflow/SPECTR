@@ -225,7 +225,7 @@ const CATEGORY = {
 
 const CAT_LABEL = { nav: 'Nav', land: 'Land', combat: 'Combat', trade: 'Trade', mat: 'Mat', mission: 'Mission', ship: 'Ship', explore: 'Explore', crew: 'Crew', cargo: 'Cargo', engineer: 'Eng' };
 
-let activeDayFilter = 'today';
+let activeDayFilter = todayUGT();
 
 function getWeekDays() {
   const now = new Date();
