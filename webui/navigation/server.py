@@ -14,7 +14,7 @@ from webui._utils import read_config, find_journal_dir, get_latest_journal
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "navigation_cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "route.csv")
-_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "blackbox.db")
+_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "blackbox.db")
 
 sub_app = FastAPI(title="SPECTR Navigation")
 

@@ -29,7 +29,7 @@ Runs a single server with a tabbed sidebar shell at `/cockpit/` and mounted sub-
 | `/lrs/` | lrs | Long Range Scanner — standalone scan page |
 | `/captains-log/` | captains_log | Day-grouped narrative event log with date picker and sidebar |
 | `/system-map/` | system_map | SVG orrery view with evenly-spaced orbits, per-body labels, info panel |
-| `/navigation/` | spansh_route | Route table with auto 3-state exobiology ticks from blackbox DB |
+| `/navigation/` | navigation | Route table with auto 3-state exobiology ticks from blackbox DB |
 
 Swagger API docs at `/cockpit/docs`, `/blackbox/docs`, `/lrs/docs`, and `/captains-log/docs`.
 

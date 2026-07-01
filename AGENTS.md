@@ -72,11 +72,11 @@ webui/
     server.py   — System Map API (system info, bodies, stations, nearby nav)
     static/
       index.html — SVG orrery view with evenly-spaced orbits, per-body labels, info panel
-  spansh_route/
+  navigation/
     __init__.py
     server.py   — Navigation API (reads spansh CSV, returns columns + rows, exo-status endpoint for automatic exobiology tracking)
     static/
-      index.html — table view with selectable cells, auto-load from ?path=, server-side CSV cache, 3-state auto ticks (red/yellow/green) from blackbox Scan/SAASignalsFound events
+      index.html — table view with selectable cells, auto-load from ?path=, server-side CSV cache, 3-state auto ticks (red/yellow/green) from blackbox Scan/SAASignalsFound events, dedicated per-body subtype tick column
 ```
 
 ## Tools (`./tools <tool>`)
@@ -134,8 +134,8 @@ webui/
 - `webui/captains_log/static/index.html` — day-grouped narrative log with date picker, ship filter, session headers, financial ledger, first-discovery/milestone badges, live mode
 - `webui/system_map/server.py` — System Map API (system info, bodies, stations, nearby nav)
 - `webui/system_map/static/index.html` — SVG orrery view with evenly-spaced orbits, per-body labels, info panel
-- `webui/spansh_route/server.py` — Navigation API (CSV cache, route loading, system polling, exobiology status)
-- `webui/spansh_route/static/index.html` — Navigation table with auto 3-state ticks (red/yellow/green) from blackbox DB
+- `webui/navigation/server.py` — Navigation API (CSV cache, route loading, system polling, exobiology status)
+- `webui/navigation/static/index.html` — Navigation table with auto 3-state ticks (red/yellow/green) from blackbox DB
 
 ## Gotchas
 
@@ -146,3 +146,5 @@ webui/
 - Ship bulkhead Item varies by ship: `armour_*`, `int_bulkheads_*`, or `<ship>_armour_gradeN` (e.g. `lakonminer_armour_grade1`).
 - Cargo value returns None if any item has no known price; unknown items are silently skipped for total calculation.
 - Navigation exo-status auto-detection: checks blackbox DB for `Scan` events (body visited) and `SAASignalsFound` events (biological signal count). Bodies with bio signals but no matching genus/species in `BuyOrganicData`/`SellOrganicData` show as partial. Server-side cache at `navigation_cache/route.csv`.
+- Navigation exo-status DB path must be project root `blackbox.db` — `webui/navigation/server.py` uses three `os.path.dirname()` to reach it.
+- Navigation subtype tick column shows per-body status (same state as the main body tick, not global per-subtype).
