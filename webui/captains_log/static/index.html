@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — Captain's Log</title>
+<script src="/static/shared.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #ccc;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .lcars-bar {
+    background: #ffcc00;
+    height: 32px;
+    border-radius: 0 16px 16px 0;
+    margin: 0 0 20px;
+    display: flex; align-items: center;
+    width: 60%;
+  }
+  .lcars-bar .label {
+    color: #000;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    padding-left: 24px;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .top-row label {
+    color: #555;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .top-row input[type="date"] {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 0 8px 8px 8px;
+    color: #ccc;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+  .top-row input[type="date"]:focus { outline: none; border-color: #ffcc00; }
+  .top-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+  .top-row select {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 0 8px 8px 8px;
+    color: #ccc;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .top-row select:focus { outline: none; border-color: #ffcc00; }
+
+  .btn {
+    padding: 8px 20px;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0 10px 10px 10px;
+    cursor: pointer;
+    color: #000;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn.today { background: #ffcc00; }
+  .btn.clear { background: #555; }
+  .btn.live {
+    background: #222;
+    color: #ffcc00;
+    border: 1px solid #ffcc00;
+    padding: 7px 18px;
+  }
+  .btn.live.active {
+    background: #cc3300;
+    color: #000;
+    border-color: #cc3300;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ff3300;
+    margin-right: 6px;
+    animation: pulse 1.2s ease-in-out infinite;
+    vertical-align: middle;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px #ff3300; }
+    50% { opacity: 0.3; box-shadow: 0 0 12px #ff3300; }
+  }
+
+  .layout {
+    display: flex;
+    gap: 20px;
+    min-height: 70vh;
+  }
+
+  .sidebar {
+    width: 140px;
+    flex-shrink: 0;
+    border-right: 1px solid #1a1a2a;
+    padding-right: 12px;
+  }
+  .sidebar .date-item {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #666;
+    cursor: pointer;
+    border-radius: 0 6px 6px 6px;
+    transition: all 0.1s;
+    letter-spacing: 1px;
+  }
+  .sidebar .date-item:hover { color: #fff; background: #0a0a14; }
+  .sidebar .date-item.active {
+    color: #000;
+    background: #ffcc00;
+    font-weight: 700;
+  }
+  .sidebar .sidebar-label {
+    color: #444;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .day-header {
+    font-size: 1.1rem;
+    color: #ffcc00;
+    letter-spacing: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ffcc0020;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+  .day-header:first-child { margin-top: 0; }
+  .day-header .count {
+    color: #555;
+    font-size: 0.7rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    letter-spacing: 0;
+    margin-left: 10px;
+  }
+
+  /* Session header */
+  .session-header {
+    background: #0a0a14;
+    border-left: 4px solid #ffcc00;
+    border-radius: 0 8px 8px 8px;
+    padding: 10px 14px;
+    margin: 16px 0 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .session-header:first-of-type { margin-top: 0; }
+  .session-ship {
+    color: #ffcc00;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .session-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .session-stats .stat {
+    color: #888;
+    font-size: 0.68rem;
+  }
+  .session-stats .stat strong {
+    color: #ccc;
+    font-weight: 600;
+  }
+  .session-stats .stat.cr-earned { color: #44aa66; }
+  .session-stats .stat.cr-spent { color: #dd4444; }
+
+  .entry {
+    display: flex;
+    align-items: stretch;
+    min-height: 30px;
+    margin-bottom: 1px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .entry .indicator {
+    width: 4px;
+    flex-shrink: 0;
+    border-radius: 0 2px 2px 0;
+    margin-right: 10px;
+  }
+  .entry .time-col {
+    width: 82px;
+    flex-shrink: 0;
+    color: #555;
+    font-size: 0.72rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    padding-top: 6px;
+  }
+  .entry .body {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #0f0f1a;
+    min-width: 0;
+  }
+  .entry .badge {
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1px 7px;
+    border-radius: 0 5px 5px 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .entry .text {
+    color: #aaa;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding-top: 1px;
+  }
+
+  .entry .badge-firstdisc {
+    background: #d4a017;
+    color: #000;
+    box-shadow: 0 0 8px #d4a01766;
+  }
+  .entry .badge-milestone {
+    background: #ff6;
+    color: #000;
+    box-shadow: 0 0 8px #ff6666;
+  }
+  .entry .badge-credits {
+    font-size: 0.5rem;
+    padding: 1px 6px;
+    border-radius: 0 4px 4px 4px;
+    font-family: 'Consolas', monospace;
+  }
+  .entry .badge-credits.positive { background: #44aa66; color: #000; }
+  .entry .badge-credits.negative { background: #dd4444; color: #000; }
+
+  .ind-nav   { background: #00bbcc; }
+  .ind-land  { background: #44aa66; }
+  .ind-combat{ background: #dd4444; }
+  .ind-trade { background: #cc8844; }
+  .ind-mat   { background: #8844aa; }
+  .ind-mission{background: #ff9900; }
+  .ind-ship  { background: #4488cc; }
+  .ind-explore{background: #55bb88; }
+  .ind-crew  { background: #aa66cc; }
+  .ind-cargo { background: #cc8844; }
+  .ind-engineer{background: #44aacc; }
+  .ind-onfoot{ background: #aa88cc; }
+  .ind-other { background: #555; }
+
+  .badge-nav   { background: #00bbcc; color: #000; }
+  .badge-land  { background: #44aa66; color: #000; }
+  .badge-combat{ background: #dd4444; color: #000; }
+  .badge-trade { background: #cc8844; color: #000; }
+  .badge-mat   { background: #8844aa; color: #fff; }
+  .badge-mission{background: #ff9900; color: #000; }
+  .badge-ship  { background: #4488cc; color: #000; }
+  .badge-explore{background: #55bb88; color: #000; }
+  .badge-crew  { background: #aa66cc; color: #000; }
+  .badge-cargo { background: #cc8844; color: #000; }
+  .badge-engineer{background: #44aacc; color: #000; }
+  .badge-onfoot{ background: #aa88cc; color: #000; }
+  .badge-other { background: #555; color: #fff; }
+
+  /* Financial summary */
+  .financial-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 10px 14px;
+    margin: 8px 0 16px;
+    background: #0a0a10;
+    border-radius: 0 8px 8px 8px;
+    border-left: 4px solid #ffcc00;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.72rem;
+  }
+  .financial-row .fi {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .financial-row .fi-label {
+    color: #555;
+    text-transform: uppercase;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+  }
+  .financial-row .fi-val {
+    font-weight: 700;
+  }
+  .financial-row .fi-val.positive { color: #44aa66; }
+  .financial-row .fi-val.negative { color: #dd4444; }
+  .financial-row .fi-val.neutral { color: #888; }
+
+  .empty { color: #555; text-align: center; padding: 40px 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #ffcc00; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 40px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .count {
+    color: #555;
+    font-size: 0.7rem;
+    margin-bottom: 12px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .no-date-selected {
+    color: #444;
+    text-align: center;
+    padding: 80px 20px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+  .no-date-selected .hint {
+    color: #666;
+    font-size: 0.75rem;
+  }
+
+  .spacer { flex: 1; }
+  .flex-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 700px) {
+    body { padding: 10px; }
+    .lcars-bar { width: 90%; }
+    .lcars-bar .label { font-size: 0.9rem; padding-left: 16px; }
+    .top-row { flex-direction: column; align-items: stretch; }
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1a1a2a; padding-right: 0; padding-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .sidebar .date-item { display: inline-block; font-size: 0.6rem; padding: 4px 8px; }
+    .sidebar .sidebar-label { width: 100%; }
+    .entry .time-col { width: 60px; font-size: 0.65rem; }
+    .entry .badge { font-size: 0.5rem; padding: 1px 5px; }
+    .entry .text { font-size: 0.72rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lcars-bar"><span class="label">Captain's Log</span></div>
+
+<div class="top-row">
+  <span class="date-display" id="date-display" style="color:#ffcc00;font-size:0.85rem;letter-spacing:2px;"></span>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <label for="ship-filter">Ship</label>
+    <select id="ship-filter"><option value="">All ships</option></select>
+    <label for="date-picker">Date</label>
+    <input type="date" id="date-picker">
+    <button class="btn today" id="btn-today">Today</button>
+    <button class="btn clear" id="btn-all">All</button>
+    <button class="btn live" id="btn-live"><span class="live-dot" id="live-dot" style="display:none"></span>Live</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-label">Days</div>
+  </div>
+  <div class="content" id="content-area">
+    <div class="count" id="event-count"></div>
+    <div id="content">
+      <div class="no-date-selected">
+        <div>Select a day from the sidebar<br>or pick a date above.</div>
+        <div class="hint">The Captain's Log shows every event recorded<br>by the flight recorder in full detail.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CAT_LABEL = { nav: 'Nav', land: 'Land', combat: 'Combat', trade: 'Trade', mat: 'Mat', mission: 'Mission', ship: 'Ship', explore: 'Explore', crew: 'Crew', cargo: 'Cargo', engineer: 'Eng', onfoot: 'On Foot', other: '?' };
+
+const FMT_DATE = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+function fmtDisplay(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y - 1286, m - 1, d));
+  return FMT_DATE.format(dt);
+}
+
+function fmtCR(n) {
+  if (n == null || n === 0) return null;
+  const abs = Math.abs(n);
+  let s;
+  if (abs >= 1e9) s = (abs / 1e9).toFixed(1) + 'B';
+  else if (abs >= 1e6) s = (abs / 1e6).toFixed(1) + 'M';
+  else if (abs >= 1e3) s = (abs / 1e3).toFixed(0) + 'K';
+  else s = String(abs);
+  return (n < 0 ? '-' : '') + s + ' CR';
+}
+
+let allDays = [];
+let allDates = [];
+let ships = [];
+let selectedDate = null;
+let selectedShip = '';
+let isLive = false;
+let liveTimer = null;
+let liveLoading = false;
+
+async function loadMetadata() {
+  const r = await fetch('api/captains-log');
+  const res = await r.json();
+  if (!res.ok) { return; }
+  allDates = res.all_dates || [];
+  ships = res.ships || [];
+  populateShipFilter();
+  renderSidebar();
+}
+
+async function loadDays(date) {
+  if (!date) {
+    allDays = [];
+    renderContent(null);
+    return;
+  }
+  const url = 'api/captains-log?date=' + encodeURIComponent(date);
+  const r = await fetch(url);
+  const res = await r.json();
+  if (!res.ok) { return; }
+  allDays = res.days || [];
+  renderContent(date);
+}
+
+function populateShipFilter() {
+  const sel = document.getElementById('ship-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All ships</option>';
+  for (const s of ships) {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    sel.appendChild(opt);
+  }
+  sel.value = ships.includes(cur) ? cur : '';
+}
+
+function selectDefault() {
+  const today = todayUGT();
+  if (allDates.includes(today)) {
+    selectedDate = today;
+    document.getElementById('date-picker').value = today;
+  } else if (allDates.length) {
+    selectedDate = allDates[0];
+    document.getElementById('date-picker').value = selectedDate;
+  } else {
+    selectedDate = null;
+  }
+  renderSidebar();
+  if (selectedDate) loadDays(selectedDate);
+  else renderContent(null);
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  const label = el.querySelector('.sidebar-label');
+  el.innerHTML = '';
+  el.appendChild(label);
+  if (!allDates.length) {
+    const empty = document.createElement('div');
+    empty.className = 'date-item';
+    empty.textContent = 'No entries';
+    empty.style.color = '#444';
+    el.appendChild(empty);
+    return;
+  }
+  for (const d of allDates) {
+    const item = document.createElement('div');
+    item.className = 'date-item' + (d === selectedDate ? ' active' : '');
+    item.textContent = fmtDisplay(d);
+    item.addEventListener('click', () => {
+      if (isLive) toggleLive();
+      selectedDate = d;
+      document.getElementById('date-picker').value = d;
+      renderSidebar();
+      loadDays(d);
+    });
+    el.appendChild(item);
+  }
+}
+
+function renderContent(dateFilter) {
+  const el = document.getElementById('content');
+  const countEl = document.getElementById('event-count');
+
+  if (!dateFilter) {
+    el.innerHTML = '<div class="no-date-selected"><div>Select a day to view the log.</div></div>';
+    countEl.textContent = '';
+    return;
+  }
+
+  let days = allDays;
+  if (dateFilter !== 'all') {
+    days = days.filter(d => d.date === dateFilter);
+  }
+
+  // Apply ship filter
+  if (selectedShip) {
+    days = days.map(day => ({
+      ...day,
+      events: day.events.filter(e => e.ship === selectedShip)
+    })).filter(day => day.events.length > 0);
+  }
+
+  if (!days.length) {
+    el.innerHTML = '<div class="empty">No events for this period</div>';
+    countEl.textContent = '0 events';
+    return;
+  }
+
+  let totalEvents = 0;
+  let html = '';
+  let lastSessionId = -1;
+  const shownSessions = new Set();
+
+  for (const day of days) {
+    totalEvents += day.events.length;
+    html += `<div class="day-header">${esc(fmtDisplay(day.date))} <span class="count">${day.events.length} events</span></div>`;
+
+    for (const ev of day.events) {
+      const sid = ev.session_id;
+
+      // Session header (only once per session across the entire rendered view)
+      if (sid !== lastSessionId && !shownSessions.has(sid)) {
+        shownSessions.add(sid);
+        const sn = (day.sessions || {})[String(sid)];
+        if (sn) {
+          html += renderSessionHeader(sn);
+        }
+        lastSessionId = sid;
+      }
+
+      html += renderEvent(ev);
+    }
+
+    // Financial summary for this day
+    if (day.financial) {
+      html += renderFinancial(day.financial);
+    }
+  }
+
+  countEl.textContent = `${totalEvents} events`;
+  el.innerHTML = html;
+
+  // Auto-scroll in live mode
+  if (isLive) {
+    scrollToLatest();
+  }
+}
+
+function renderSessionHeader(sn) {
+  const stats = [];
+  if (sn.jumps) stats.push(`<span class="stat"><strong>${sn.jumps}</strong> jumps</span>`);
+  if (sn.bounties) stats.push(`<span class="stat"><strong>${sn.bounties}</strong> bounties</span>`);
+  if (sn.missions) stats.push(`<span class="stat"><strong>${sn.missions}</strong> missions</span>`);
+  if (sn.scans) stats.push(`<span class="stat"><strong>${sn.scans}</strong> scans</span>`);
+  if (sn.organic_scans) stats.push(`<span class="stat"><strong>${sn.organic_scans}</strong> organic</span>`);
+  if (sn.landings) stats.push(`<span class="stat"><strong>${sn.landings}</strong> landings</span>`);
+  if (sn.docks) stats.push(`<span class="stat"><strong>${sn.docks}</strong> docks</span>`);
+  if (sn.systems_count) stats.push(`<span class="stat"><strong>${sn.systems_count}</strong> systems</span>`);
+  const earn = fmtCR(sn.credits_earned);
+  const spend = fmtCR(sn.credits_spent);
+  if (earn) stats.push(`<span class="stat cr-earned"><strong>+${earn}</strong></span>`);
+  if (spend) stats.push(`<span class="stat cr-spent"><strong>-${spend}</strong></span>`);
+
+  return `<div class="session-header">
+    <div class="session-ship">${esc(sn.ship)}</div>
+    ${stats.length ? `<div class="session-stats">${stats.join('')}</div>` : ''}
+  </div>`;
+}
+
+function renderEvent(ev) {
+  const cat = ev.category || 'other';
+  let badges = `<span class="badge badge-${cat}">${CAT_LABEL[cat] || '?'}</span>`;
+
+  if (ev.is_first_discovery) {
+    badges += `<span class="badge badge-firstdisc">★ First Discovery</span>`;
+  }
+  if (ev.is_milestone && ev.milestone_label) {
+    badges += `<span class="badge badge-milestone">${esc(ev.milestone_label)}</span>`;
+  }
+
+  const cc = ev.credits_change;
+  if (cc && cc !== 0) {
+    const cls = cc > 0 ? 'positive' : 'negative';
+    badges += `<span class="badge badge-credits ${cls}">${cc > 0 ? '+' : ''}${fmtCR(cc)}</span>`;
+  }
+
+  const text = esc(ev.formatted || ev.event);
+  return `<div class="entry">
+    <span class="indicator ind-${cat}"></span>
+    <span class="time-col">${esc(ev.time)}</span>
+    <div class="body">
+      ${badges}
+      <span class="text">${text}</span>
+    </div>
+  </div>`;
+}
+
+function renderFinancial(fin) {
+  const income = fmtCR(fin.income);
+  const expenses = fmtCR(fin.expenses);
+  const net = fin.net;
+  const netStr = fmtCR(net);
+  const netCls = net > 0 ? 'positive' : (net < 0 ? 'negative' : 'neutral');
+
+  let html = '<div class="financial-row">';
+  if (income) html += `<span class="fi"><span class="fi-label">Income</span> <span class="fi-val positive">${income}</span></span>`;
+  if (expenses) html += `<span class="fi"><span class="fi-label">Expenses</span> <span class="fi-val negative">${expenses}</span></span>`;
+  if (netStr) html += `<span class="fi"><span class="fi-label">Net</span> <span class="fi-val ${netCls}">${net > 0 ? '+' : ''}${netStr}</span></span>`;
+  html += '</div>';
+  return html;
+}
+
+function scrollToLatest() {
+  const area = document.getElementById('content-area');
+  const el = document.getElementById('content');
+  if (el) {
+    area.scrollTop = area.scrollHeight;
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+}
+
+function toggleLive() {
+  isLive = !isLive;
+  const btn = document.getElementById('btn-live');
+  const dot = document.getElementById('live-dot');
+
+  if (isLive) {
+    btn.classList.add('active');
+    dot.style.display = 'inline-block';
+    selectedDate = todayUGT();
+    document.getElementById('date-picker').value = selectedDate;
+    renderSidebar();
+    loadDays(selectedDate);
+    liveTimer = setInterval(() => {
+      if (liveLoading) return;
+      liveLoading = true;
+      selectedDate = todayUGT();
+      document.getElementById('date-picker').value = selectedDate;
+      loadDays(selectedDate).then(() => { liveLoading = false; }).catch(() => { liveLoading = false; });
+    }, 2000);
+  } else {
+    btn.classList.remove('active');
+    dot.style.display = 'none';
+    clearInterval(liveTimer);
+    liveTimer = null;
+  }
+}
+
+// --- Event handlers ---
+
+document.getElementById('date-picker').addEventListener('change', e => {
+  if (isLive) toggleLive();
+  const val = e.target.value;
+  if (val) {
+    selectedDate = val;
+    renderSidebar();
+    loadDays(val);
+  }
+});
+
+document.getElementById('btn-today').addEventListener('click', () => {
+  if (isLive) toggleLive();
+  const today = todayUGT();
+  document.getElementById('date-picker').value = today;
+  selectedDate = today;
+  renderSidebar();
+  loadDays(today);
+});
+
+document.getElementById('btn-all').addEventListener('click', () => {
+  if (isLive) toggleLive();
+  document.getElementById('date-picker').value = '';
+  selectedDate = 'all';
+  renderSidebar();
+  loadDays();
+});
+
+document.getElementById('ship-filter').addEventListener('change', e => {
+  selectedShip = e.target.value;
+  renderContent(selectedDate === 'all' ? 'all' : (selectedDate || null));
+});
+
+document.getElementById('btn-live').addEventListener('click', toggleLive);
+
+(async function init() {
+  document.getElementById('date-display').textContent = todayUGT();
+  await loadMetadata();
+  selectDefault();
+})();
+</script>
+</body>
+</html>

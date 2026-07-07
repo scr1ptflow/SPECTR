@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: #000;
+    color: #ccc;
+    font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+    display: flex;
+  }
+
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: #0a0a1a;
+    border-right: 2px solid #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    padding-top: 8px;
+  }
+  .sidebar .brand {
+    color: #ff9900;
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 20px 12px 28px;
+    border-bottom: 1px solid #1a1a2e;
+    margin-bottom: 8px;
+  }
+  .tab {
+    padding: 14px 20px;
+    cursor: pointer;
+    color: #666;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    font-weight: 700;
+  }
+  .tab:hover { color: #aaa; background: #0f0f2a; }
+  .tab.active { color: #ff9900; border-left-color: #ff9900; background: #0f0f2a; }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .tool-panel {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding: 20px;
+    overflow: auto;
+  }
+  .tool-panel.active { display: flex; }
+  .tool-panel iframe {
+    width: 100%;
+    flex: 1;
+    border: none;
+    background: #000;
+  }
+
+  @media (max-width: 700px) {
+    body { flex-direction: column; }
+    .sidebar {
+      width: 100%; min-width: 0;
+      flex-direction: row;
+      overflow-x: auto;
+      border-right: none;
+      border-bottom: 2px solid #1a1a2e;
+      padding-top: 0;
+      order: 1;
+    }
+    .sidebar .brand {
+      display: none;
+    }
+    .tab {
+      padding: 12px 14px;
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      border-left: none;
+      border-top: 3px solid transparent;
+    }
+    .tab.active { border-left: none; border-top-color: #ff9900; }
+    .tool-panel { padding: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">SPECTR</div>
+  <div class="tab active" data-tool="system-map">System Map</div>
+  <div class="tab" data-tool="ship">Ship</div>
+  <div class="tab" data-tool="missions">Missions</div>
+  <div class="tab" data-tool="lrs">LRS</div>
+  <div class="tab" data-tool="route">Navigation</div>
+  <div class="tab" data-tool="blackbox">Flight Recorder</div>
+  <div class="tab" data-tool="captains-log">Captains Log</div>
+  <div class="tab" data-tool="engineering">Engineering</div>
+
+  <div class="tab" data-tool="laboratory">Laboratory</div>
+</div>
+
+<div class="main">
+
+  <div class="tool-panel active" id="panel-system-map">
+    <iframe src="/system-map/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-ship">
+    <iframe src="/ship/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-missions">
+    <iframe src="/missions/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-lrs">
+    <iframe src="/lrs/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-route">
+    <iframe src="/navigation/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-blackbox">
+    <iframe src="/blackbox/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-captains-log">
+    <iframe src="/captains-log/"></iframe>
+  </div>
+
+  <div class="tool-panel" id="panel-engineering">
+    <iframe src="/engineering/"></iframe>
+  </div>
+
+
+
+  <div class="tool-panel" id="panel-laboratory">
+    <iframe src="/laboratory/"></iframe>
+  </div>
+
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const panel = document.getElementById('panel-' + tab.dataset.tool);
+    if (panel) panel.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

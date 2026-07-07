@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — System Map</title>
+<script src="/static/shared.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #ccc;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.lcars-bar {
+  background: #3366cc;
+  height: 32px;
+  border-radius: 0 16px 16px 0;
+  margin: 0;
+  display: flex; align-items: center;
+  width: 55%;
+  flex-shrink: 0;
+  position: relative; z-index: 20;
+}
+.lcars-bar .label {
+  color: #000;
+  font-size: 1rem;
+  letter-spacing: 3px;
+  padding-left: 20px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.map-container {
+  flex: 1; position: relative; min-height: 0;
+  overflow: hidden;
+}
+#map-svg { width: 100%; height: 100%; display: block; }
+
+/* System name — top right */
+.sys-label {
+  position: absolute;
+  top: 14px; right: 18px;
+  text-align: right;
+  z-index: 15;
+  pointer-events: none;
+}
+.sys-label .sl-name {
+  font-size: 1.4rem;
+  color: #3366cc;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.sys-label .sl-coords {
+  font-size: 0.6rem;
+  color: #555;
+  font-family: 'Consolas','Courier New',monospace;
+}
+.sys-label .sl-stats {
+  font-size: 0.6rem;
+  color: #00bbcc;
+  font-family: 'Segoe UI',system-ui,sans-serif;
+  margin-top: 2px;
+}
+
+/* Legend labels */
+.legend-label {
+  position: absolute;
+  font-family: 'Swiss 911','Arial Black','Impact',system-ui,sans-serif;
+  font-size: 0.7rem;
+  color: #c4b5d0;
+  z-index: 12;
+  cursor: pointer;
+  text-align: center;
+  pointer-events: auto;
+  line-height: 1.3;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  transform: translateX(-50%);
+}
+.legend-label:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+
+.note-btn {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.8rem;
+  padding: 2px 8px; border-radius: 0 4px 4px 4px;
+  color: #555; transition: all 0.15s; vertical-align: middle;
+  position: absolute; top: 14px; left: 18px; z-index: 15;
+}
+.note-btn:hover { background: #1a1a2a; }
+.note-btn.has-note { color: #3366cc; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: #0a0a14; border: 1px solid #2a2a4a;
+  border-radius: 0 12px 12px 12px; padding: 20px;
+  width: 420px; max-width: 90vw;
+}
+.modal h3 {
+  color: #3366cc; font-size: 0.75rem; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 12px; font-weight: 900;
+}
+.modal label {
+  color: #888; font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 1px; display: block; margin-bottom: 4px;
+}
+.modal textarea {
+  width: 100%; background: #000; border: 1px solid #2a2a4a;
+  color: #ccc; padding: 8px; font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.78rem; border-radius: 0 6px 6px 6px; resize: vertical;
+  min-height: 80px; margin-bottom: 10px;
+}
+.modal input {
+  width: 100%; background: #000; border: 1px solid #2a2a4a;
+  color: #ccc; padding: 8px; font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.78rem; border-radius: 0 6px 6px 6px; margin-bottom: 10px;
+}
+.modal .btn-row {
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* Info panel — center right */
+.info-panel {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  background: rgba(6,6,16,0.95);
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 220px;
+  max-width: 300px;
+  font-family: 'Segoe UI',system-ui,sans-serif;
+  font-size: 0.72rem;
+  color: #888;
+  line-height: 1.8;
+  display: none;
+  z-index: 18;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.7);
+}
+.info-panel.open { display: block; }
+.info-panel .ip-title {
+  font-family: 'Swiss 911','Arial Black','Impact',system-ui,sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1a1a2a;
+}
+.info-panel .ip-g { display: block; }
+.info-panel .ip-dt { color: #555; }
+.info-panel .ip-dd { color: #bbb; }
+.info-panel .ip-dd.exo-yes { color: #ffd700; }
+.info-panel .ip-close {
+  float: right;
+  cursor: pointer;
+  color: #444;
+  font-size: 1rem;
+  line-height: 1;
+}
+.info-panel .ip-close:hover { color: #3366cc; }
+#ip-moons { margin-top: 10px; padding-top: 8px; border-top: 1px solid #1a1a2a; display: none; }
+.ip-moons-hdr { font-size: 0.6rem; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.ip-moons-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.ip-moon-item { font-size: 0.65rem; color: #44aa66; background: rgba(68,170,102,0.08); padding: 1px 6px; border-radius: 3px; cursor: pointer; }
+.ip-moon-item:hover { background: rgba(68,170,102,0.2); color: #66dd88; }
+.ip-moon-item.exo-yes { color: #ffd700; background: rgba(255,215,0,0.08); }
+.ip-moon-item.exo-yes:hover { background: rgba(255,215,0,0.2); color: #ffd700; }
+.ip-moon-item.selected { outline: 1px solid #3366cc; outline-offset: 1px; }
+#ip-moons .ip-moons-hdr[data-parent]:hover { color: #66dd88; }
+#ip-moon-detail { margin-top: 10px; padding-top: 8px; border-top: 1px solid #1a1a2a; display: none; }
+.moon-detail-title { font-size: 0.65rem; color: #44aa66; letter-spacing: 1px; margin-bottom: 6px; }
+
+  .spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #3366cc; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 80px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { color: #dd4444; padding: 40px; text-align: center; font-family: 'Segoe UI',system-ui,sans-serif; }
+
+  .legend-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    background: rgba(6,6,16,0.88);
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 6px 16px;
+    z-index: 15;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.62rem;
+    color: #888;
+    pointer-events: none;
+  }
+  .legend-bar .swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+  .legend-bar .swatch.outline {
+    width: 14px; height: 14px;
+    border: 2px solid #ffd700;
+    background: none;
+    margin-right: 3px;
+  }
+  .legend-bar .sep { color: #333; font-size: 0.7rem; }
+
+@media (max-width: 700px) {
+  .lcars-bar { width: 85%; }
+  .lcars-bar .label { font-size: 0.85rem; padding-left: 14px; }
+  .sys-label { top: 10px; right: 12px; }
+  .sys-label .sl-name { font-size: 1rem; }
+  .info-panel { right: 8px; min-width: 160px; max-width: 220px; padding: 12px 14px; }
+  .legend-label { font-size: 0.55rem; }
+}
+</style>
+</head>
+<body>
+<div class="lcars-bar"><span class="label">System Map</span></div>
+<div class="map-container" id="map-container">
+  <svg id="map-svg" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"></svg>
+  <div class="sys-label" id="sys-label">
+    <div class="sl-name" id="sl-name">—</div>
+    <div class="sl-coords" id="sl-coords"></div>
+    <div class="sl-stats" id="sl-stats"></div>
+  </div>
+  <button class="note-btn" id="note-btn" onclick="openNoteModal()" title="Add note">+</button>
+  <div class="info-panel" id="info-panel">
+    <span class="ip-close" id="ip-close">&times;</span>
+    <div class="ip-title" id="ip-title"></div>
+    <div class="ip-g" id="ip-body"></div>
+    <div id="ip-moons"></div>
+    <div id="ip-moon-detail"></div>
+  </div>
+  <div class="legend-bar" id="legend-bar">
+    <span><span class="swatch outline" style="border-color:#88cc44"></span>High Value</span>
+    <span><span class="swatch outline" style="border-color:#cc8844"></span>Medium Value</span>
+    <span><span class="swatch outline" style="border-color:#555"></span>Low Value</span>
+    <span class="sep">|</span>
+    <span><span class="swatch outline" style="border-color:#ffd700"></span>Valuable Exo</span>
+  </div>
+  <div class="legend-bar" id="legend-bar2" style="bottom:42px">
+    <span><span class="swatch" style="background:#dae8ff"></span>Star</span>
+    <span class="sep">|</span>
+    <span><span class="swatch" style="background:#bb8866"></span>Rocky</span>
+    <span><span class="swatch" style="background:#aaccff"></span>Icy</span>
+    <span><span class="swatch" style="background:#44cc88"></span>Earth-like</span>
+    <span><span class="swatch" style="background:#4488ff"></span>Water World</span>
+    <span><span class="swatch" style="background:#ddaa77"></span>Gas Giant</span>
+    <span><span class="swatch" style="background:#44aa66"></span>Moon</span>
+  </div>
+</div>
+<div id="note-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeNoteModal()">
+  <div class="modal">
+    <h3 id="note-modal-title">Note</h3>
+    <label>System</label>
+    <input id="note-system" type="text" readonly>
+    <label>Note</label>
+    <textarea id="note-text" placeholder="Enter notes for this system..."></textarea>
+    <label>Tags (comma-separated)</label>
+    <input id="note-tags" type="text" placeholder="e.g. exo, scan, poi">
+    <div class="btn-row">
+      <button class="btn" id="note-delete-btn" onclick="deleteNote()" style="background:#aa3333;display:none;">Delete</button>
+      <button class="btn" onclick="closeNoteModal()" style="background:#555;">Cancel</button>
+      <button class="btn" onclick="saveNote()" style="background:#3366cc;">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ */
+/*  SPECTR System Map — 2.5D Orrery View                              */
+/* ------------------------------------------------------------------ */
+
+const PERSPECTIVE = 0.5;
+const ORBIT_COLORS = ['#c4b5d0', '#d4c5a9'];
+
+const svg = document.getElementById('map-svg');
+const container = document.getElementById('map-container');
+const infoPanel = document.getElementById('info-panel');
+
+/* ---- State ---- */
+let allBodies = [];
+let selectedBody = null;
+let currentSystem = '';
+
+/* ---- Name helpers ---- */
+function parentName(name) {
+  const parts = name.trim().split(' ');
+  parts.pop();
+  return parts.join(' ');
+}
+function shortName(name) {
+  const parts = name.trim().split(' ');
+  return parts[parts.length - 1];
+}
+
+/* ---- Helpers ---- */
+function degToRad(d) { return d * Math.PI / 180; }
+
+/* ---- Position computation ---- */
+function bodyAngle(name) {
+  if (!drawMap._bodyAngles) drawMap._bodyAngles = {};
+  if (drawMap._bodyAngles[name] == null) {
+    drawMap._bodyAngles[name] = Math.random() * 360;
+  }
+  return drawMap._bodyAngles[name];
+}
+
+/* ---- Draw ---- */
+function drawMap() {
+  const { width: W, height: H } = container.getBoundingClientRect();
+  if (!W || !H) return;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+  if (!allBodies.length) {
+    svg.innerHTML = '<rect width="' + W + '" height="' + H + '" fill="#0a0a18"/>' +
+      '<text x="' + (W/2) + '" y="' + (H/2) + '" fill="#555" font-family="Segoe UI,sans-serif" font-size="14" text-anchor="middle">No system data — launch Elite Dangerous and travel to a system</text>';
+    return;
+  }
+
+  const cx = W / 2;
+  const cy = H * 0.52;
+  const maxR = Math.min(W / 2, H * 0.48) - 30;
+  const minR = 50;
+  const nonCarriers = allBodies.filter(b => b.category !== 'Carrier');
+
+  // Visible: stars + planets (server category is authoritative; moons excluded)
+  const visibleBodies = nonCarriers.filter(b =>
+    b.category === 'Star' || b.category === 'Planet'
+  );
+
+  // Build moon map for info panel
+  const moonsByPlanet = {};
+  nonCarriers.forEach(b => {
+    if (b.category === 'Moon') {
+      const pn = parentName(b.name);
+      (moonsByPlanet[pn] = moonsByPlanet[pn] || []).push(shortName(b.name));
+    }
+  });
+
+  let bodyIndex = 0;
+  let html = '<defs>';
+
+  html += '<radialGradient id="plane-grad" cx="50%" cy="50%" r="50%">';
+  html += '<stop offset="0%" stop-color="#0a0a18" stop-opacity="1"/>';
+  html += '<stop offset="100%" stop-color="#000002" stop-opacity="1"/>';
+  html += '</radialGradient>';
+
+  html += '</defs>';
+
+  // Background
+  html += '<rect width="' + W + '" height="' + H + '" fill="url(#plane-grad)"/>';
+
+  // Starfield (persistent dots)
+  if (!drawMap._dots) {
+    drawMap._dots = [];
+    for (let i = 0; i < 200; i++) {
+      drawMap._dots.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.2,
+        o: Math.random() * 0.35 + 0.05,
+      });
+    }
+  }
+  drawMap._dots.forEach(d => {
+    html += '<circle cx="' + d.x + '" cy="' + d.y + '" r="' + d.r + '" fill="#666" opacity="' + d.o + '"/>';
+  });
+
+  const mainStar = nonCarriers.find(b => b.category === 'Star' && b.distance < 3);
+
+  // Main star at center (render first so planets/other stars sit on top)
+  if (mainStar) {
+    html += '<g class="body-group" data-name="' + esc(mainStar.name) + '" style="cursor:pointer">';
+    html += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#ffffff" opacity="0.95"/>';
+    html += '</g>';
+  }
+
+  // Orbital plane — orbits only (perspective-squished)
+  html += '<g transform="translate(' + cx + ', ' + cy + ') scale(1, ' + PERSPECTIVE + ')">';
+
+  const orbitBodies = visibleBodies.filter(b => !(b.category === 'Star' && b.distance < 3));
+  const orbitSpacing = (maxR - minR) / (orbitBodies.length + 1);
+  orbitBodies.forEach((b, idx) => {
+    const r = minR + (idx + 1) * orbitSpacing;
+    const color = ORBIT_COLORS[idx % 2];
+    html += '<circle cx="0" cy="0" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="1.2" opacity="0.35"/>';
+  });
+
+  html += '</g>'; // end orbital plane
+
+  // Bodies — rendered outside perspective group so they stay round
+  const orbitBodyCount = orbitBodies.length;
+  bodyIndex = 0;
+  visibleBodies.forEach((b) => {
+    if (b.category === 'Star' && b.distance < 3) return;
+
+    const r = minR + (bodyIndex + 1) * orbitSpacing;
+    const angle = bodyAngle(b.name);
+    const rad = degToRad(angle);
+    const bx = cx + r * Math.cos(rad);
+    const by = cy + r * Math.sin(rad) * PERSPECTIVE;
+
+    const isStar = b.category === 'Star';
+    const color = b.starColor || b.color || '#4488cc';
+    const markerR = isStar ? 10 : 6;
+
+    html += '<g class="body-group" data-name="' + esc(b.name) + '" style="cursor:pointer">';
+    if (b.valuableExo) {
+      html += '<circle cx="' + bx + '" cy="' + by + '" r="' + (markerR + 4) + '" fill="none" stroke="#ffd700" stroke-width="2" opacity="0.9"/>';
+    } else if (b.valueTier === 2) {
+      html += '<circle cx="' + bx + '" cy="' + by + '" r="' + (markerR + 4) + '" fill="none" stroke="#88cc44" stroke-width="2" opacity="0.9"/>';
+    } else if (b.valueTier === 1) {
+      html += '<circle cx="' + bx + '" cy="' + by + '" r="' + (markerR + 4) + '" fill="none" stroke="#cc8844" stroke-width="2" opacity="0.9"/>';
+    } else {
+      html += '<circle cx="' + bx + '" cy="' + by + '" r="' + (markerR + 4) + '" fill="none" stroke="#555" stroke-width="1.2" opacity="0.6"/>';
+    }
+    html += '<circle cx="' + bx + '" cy="' + by + '" r="' + markerR + '" fill="' + color + '" opacity="0.85"/>';
+    html += '</g>';
+    bodyIndex++;
+  });
+
+  /* ---- Legend — one label per body, non-overlapping ---- */
+  const labelItems = [];
+
+  function labelColor(b) {
+    if (b.category === 'Star') return b.starColor || '#3366cc';
+    return b.color || '#4488cc';
+  }
+
+  // Main star
+  if (mainStar) {
+    labelItems.push({
+      name: mainStar.name,
+      color: labelColor(mainStar),
+      screenX: cx,
+      screenY: cy,
+    });
+  }
+
+  // Main planets
+  bodyIndex = 0;
+  visibleBodies.forEach((b) => {
+    if (b.category === 'Star' && b.distance < 3) return;
+    const r = minR + (bodyIndex + 1) * orbitSpacing;
+    const angle = bodyAngle(b.name);
+    const rad = degToRad(angle);
+    labelItems.push({
+      name: b.name,
+      color: labelColor(b),
+      screenX: cx + r * Math.cos(rad),
+      screenY: cy + r * Math.sin(rad) * PERSPECTIVE,
+    });
+    bodyIndex++;
+  });
+
+  // Connecting lines from body up to label position
+  labelItems.forEach(item => {
+    const ly = item.screenY - 38;
+    html += '<line x1="' + item.screenX + '" y1="' + ly + '" x2="' + item.screenX + '" y2="' + (item.screenY - 4) + '" stroke="#d4c5a9" stroke-width="0.7" opacity="0.25"/>';
+  });
+
+  // Render labels directly above each body
+  document.querySelectorAll('.legend-label').forEach(el => el.remove());
+
+  const LABEL_OFFSET = 38;
+
+  labelItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'legend-label';
+    div.style.left = item.screenX + 'px';
+    div.style.top = (item.screenY - LABEL_OFFSET) + 'px';
+    div.dataset.name = item.name;
+    div.textContent = shortName(item.name);
+    div.addEventListener('click', function() {
+      const body = allBodies.find(b => b.name === this.dataset.name);
+      if (body) selectBody(body);
+    });
+    container.appendChild(div);
+  });
+
+  svg.innerHTML = html;
+  attachEvents();
+}
+
+/* ---- Events ---- */
+function attachEvents() {
+  document.querySelectorAll('.body-group').forEach(el => {
+    el.addEventListener('click', function() {
+      const name = this.dataset.name;
+      const body = allBodies.find(b => b.name === name);
+      if (body) selectBody(body);
+    });
+  });
+}
+
+function selectBody(body) {
+  if (selectedBody && selectedBody.name === body.name) {
+    selectedBody = null;
+    infoPanel.classList.remove('open');
+    drawMap();
+    return;
+  }
+  selectedBody = body;
+
+  const pieces = [];
+  if (body.category === 'Star' && body.starType) pieces.push(body.starType);
+  if (body.subType && body.subType !== body.category) pieces.push(body.subType);
+  const typeStr = pieces.join(' ') || body.category;
+
+  const color = body.starColor || body.color || '#555';
+  document.getElementById('ip-title').innerHTML =
+    '<span style="color:' + color + '">' + esc(body.name) + '</span>' +
+    ' <span style="color:#555;font-size:0.65rem;font-weight:400">' + esc(typeStr) + '</span>';
+
+  const items = [
+    ['Category', body.category],
+    ['Distance', body.distance.toLocaleString() + ' ls'],
+  ];
+  if (body.radius != null && body.radius > 0) items.push(['Radius', Number(body.radius).toLocaleString() + ' km']);
+  if (body.gravity != null) items.push(['Gravity', Number(body.gravity).toFixed(2) + ' g']);
+  if (body.surfaceTemp != null) items.push(['Surface Temp', Number(body.surfaceTemp).toLocaleString() + ' K']);
+  if (body.atmosphere) items.push(['Atmosphere', body.atmosphere]);
+  if (body.isLandable) items.push(['Landable', 'Yes']);
+  if (body.valueTier != null) {
+    const tierLabels = ['Low', 'Medium', 'High'];
+    items.push(['Exploration Value', tierLabels[body.valueTier]]);
+  }
+  if (body.valuableExo) items.push(['Valuable Exo', '\u2605 High Value']);
+  if (body.tidallyLocked) items.push(['Tidally Locked', 'Yes']);
+  if (body.terraformingState) items.push(['Terraforming', body.terraformingState]);
+  if (body.eccentricity != null) items.push(['Eccentricity', body.eccentricity.toFixed(4)]);
+  if (body.stellarMass != null) items.push(['Stellar Mass', body.stellarMass.toFixed(2) + ' M\u2609']);
+  if (body.stationType) items.push(['Station Type', body.stationType]);
+  if (body.allegiance) items.push(['Allegiance', body.allegiance]);
+  if (body.economy) items.push(['Economy', body.economy]);
+  if (body.government) items.push(['Government', body.government]);
+  if (body.pad) items.push(['Max Pad', body.pad]);
+  document.getElementById('ip-body').innerHTML = items.map(p =>
+    '<div><span class="ip-dt">' + esc(p[0]) + ':</span> <span class="ip-dd">' + esc(p[1]) + '</span></div>'
+  ).join('');
+
+  // Moons list — clickable, or back-link when viewing a moon
+  const moonsDiv = document.getElementById('ip-moons');
+  if (body.category === 'Moon') {
+    const par = parentName(body.name);
+    moonsDiv.innerHTML =
+      '<div class="ip-moons-hdr" style="cursor:pointer" data-parent="' + esc(par) + '">\u2190 ' + esc(shortName(par)) + '</div>';
+    moonsDiv.style.display = 'block';
+    moonsDiv.querySelector('.ip-moons-hdr').addEventListener('click', function() {
+      const parent = allBodies.find(b => b.name === this.dataset.parent);
+      if (parent) selectBody(parent);
+    });
+    document.getElementById('ip-moon-detail').style.display = 'none';
+  } else {
+    const planetMoons = allBodies.filter(b => b.category === 'Moon' && parentName(b.name) === body.name);
+    if (planetMoons.length) {
+      moonsDiv.innerHTML =
+        '<div class="ip-moons-hdr">Moons</div>' +
+        '<div class="ip-moons-list">' +
+        planetMoons.map(m =>
+          '<span class="ip-moon-item' + (m.valuableExo ? ' exo-yes' : '') + '" data-name="' + esc(m.name) + '">' + esc(shortName(m.name)) + '</span>'
+        ).join('') +
+        '</div>';
+      moonsDiv.style.display = 'block';
+      // Show first moon by default
+      showMoonInfo(planetMoons[0]);
+      moonsDiv.querySelectorAll('.ip-moon-item').forEach(el => {
+        el.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const moon = allBodies.find(b => b.name === this.dataset.name);
+          if (moon) showMoonInfo(moon);
+        });
+      });
+    } else {
+      moonsDiv.style.display = 'none';
+      document.getElementById('ip-moon-detail').style.display = 'none';
+    }
+  }
+
+  infoPanel.classList.add('open');
+  drawMap();
+}
+
+function showMoonInfo(moon) {
+  const div = document.getElementById('ip-moon-detail');
+  const pieces = [];
+  if (moon.subType && moon.subType !== 'Moon') pieces.push(moon.subType);
+  const typeStr = pieces.join(' ') || 'Moon';
+
+  const items = [
+    ['Category', 'Moon'],
+    ['Distance', moon.distance.toLocaleString() + ' ls'],
+  ];
+  if (moon.radius != null && moon.radius > 0) items.push(['Radius', Number(moon.radius).toLocaleString() + ' km']);
+  if (moon.gravity != null) items.push(['Gravity', Number(moon.gravity).toFixed(2) + ' g']);
+  if (moon.surfaceTemp != null) items.push(['Surface Temp', Number(moon.surfaceTemp).toLocaleString() + ' K']);
+  if (moon.atmosphere) items.push(['Atmosphere', moon.atmosphere]);
+  if (moon.isLandable) items.push(['Landable', 'Yes']);
+  if (moon.valueTier != null) {
+    const tierLabels = ['Low', 'Medium', 'High'];
+    items.push(['Exploration Value', tierLabels[moon.valueTier]]);
+  }
+  if (moon.valuableExo) items.push(['Valuable Exo', '\u2605 High Value']);
+  if (moon.tidallyLocked) items.push(['Tidally Locked', 'Yes']);
+  if (moon.eccentricity != null) items.push(['Eccentricity', moon.eccentricity.toFixed(4)]);
+
+  // Highlight this moon in the list
+  document.querySelectorAll('.ip-moon-item').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.ip-moon-item').forEach(el => {
+    if (el.dataset.name === moon.name) el.classList.add('selected');
+  });
+
+  div.innerHTML =
+    '<div class="ip-g">' +
+    items.map(p => '<div><span class="ip-dt">' + esc(p[0]) + ':</span> <span class="ip-dd">' + esc(p[1]) + '</span></div>').join('') +
+    '</div>';
+  div.style.display = 'block';
+}
+
+function svgMsg(msg, color) {
+  const { width: W, height: H } = container.getBoundingClientRect();
+  svg.setAttribute('viewBox', '0 0 ' + (W || 800) + ' ' + (H || 600));
+  svg.innerHTML = '<rect width="100%" height="100%" fill="#0a0a18"/>' +
+    '<text x="' + ((W||800)/2) + '" y="' + ((H||600)/2) + '" fill="' + (color||'#555') + '" font-family="Segoe UI,sans-serif" font-size="14" text-anchor="middle">' + esc(msg) + '</text>';
+}
+
+/* ---- Notes ---- */
+let _note = null;
+
+async function loadSystemNote() {
+  if (!currentSystem) return;
+  try {
+    const r = await fetch('/notes/api/notes?system=' + encodeURIComponent(currentSystem));
+    const res = await r.json();
+    if (res.ok && Array.isArray(res.notes) && res.notes.length) {
+      _note = res.notes[0];
+      document.getElementById('note-btn').textContent = '\u2713';
+      document.getElementById('note-btn').classList.add('has-note');
+    } else {
+      _note = null;
+      document.getElementById('note-btn').textContent = '+';
+      document.getElementById('note-btn').classList.remove('has-note');
+    }
+  } catch (_) {}
+}
+
+function openNoteModal() {
+  if (!currentSystem) return;
+  document.getElementById('note-system').value = currentSystem;
+  document.getElementById('note-modal-title').textContent = 'Note — ' + currentSystem;
+  document.getElementById('note-text').value = _note ? (_note.note_text || '') : '';
+  document.getElementById('note-tags').value = _note ? (_note.tags || '') : '';
+  document.getElementById('note-delete-btn').style.display = _note ? 'inline-block' : 'none';
+  document.getElementById('note-modal').style.display = 'flex';
+  document.getElementById('note-text').focus();
+}
+
+function closeNoteModal() {
+  document.getElementById('note-modal').style.display = 'none';
+}
+
+async function saveNote() {
+  const system = document.getElementById('note-system').value.trim();
+  const note_text = document.getElementById('note-text').value.trim();
+  const tags = document.getElementById('note-tags').value.trim();
+  if (!system) return;
+  try {
+    const body = new URLSearchParams();
+    body.append('system', system);
+    body.append('note_text', note_text);
+    if (tags) body.append('tags', tags);
+    const r = await fetch('/notes/api/notes', { method: 'PUT', body });
+    const res = await r.json();
+    if (res.ok) {
+      _note = res.note;
+      document.getElementById('note-btn').textContent = note_text ? '\u2713' : '+';
+      document.getElementById('note-btn').classList.toggle('has-note', !!note_text);
+      closeNoteModal();
+    } else {
+      alert('Error saving note: ' + (res.error || 'unknown'));
+    }
+  } catch (err) {
+    alert('Error saving note: ' + err);
+  }
+}
+
+async function deleteNote() {
+  const system = document.getElementById('note-system').value.trim();
+  if (!system || !confirm('Delete note for ' + system + '?')) return;
+  try {
+    const r = await fetch('/notes/api/notes?system=' + encodeURIComponent(system), { method: 'DELETE' });
+    const res = await r.json();
+    if (res.ok) {
+      _note = null;
+      document.getElementById('note-btn').textContent = '+';
+      document.getElementById('note-btn').classList.remove('has-note');
+      closeNoteModal();
+    } else {
+      alert('Error deleting note: ' + (res.error || 'unknown'));
+    }
+  } catch (err) {
+    alert('Error deleting note: ' + err);
+  }
+}
+
+async function load() {
+  try {
+    const r = await fetch('api/system');
+    const sys = await r.json();
+    if (!sys.ok) {
+      svgMsg(sys.error || 'could not determine current system', '#dd4444');
+      return;
+    }
+    currentSystem = sys.system;
+    document.getElementById('sl-name').textContent = sys.system;
+    loadSystemNote();
+    if (sys.coords) {
+      const c = sys.coords;
+      document.getElementById('sl-coords').textContent = '(' + c.x.toFixed(2) + ', ' + c.y.toFixed(2) + ', ' + c.z.toFixed(2) + ')';
+    }
+
+    const br = await fetch('api/bodies');
+    const data = await br.json();
+    if (!data.ok) {
+      svgMsg(data.error || 'failed to load bodies', '#dd4444');
+      return;
+    }
+
+    allBodies = data.bodies || [];
+
+    const starsPlanets = allBodies.filter(b => b.category === 'Star' || b.category === 'Planet' || b.category === 'Moon');
+    document.getElementById('sl-stats').textContent = starsPlanets.length + ' objects';
+
+    document.getElementById('ip-close').addEventListener('click', function() {
+      selectedBody = null;
+      infoPanel.classList.remove('open');
+      drawMap();
+    });
+
+    drawMap();
+  } catch (e) {
+    svgMsg('Error loading system data', '#dd4444');
+  }
+}
+
+const ro = new ResizeObserver(drawMap);
+ro.observe(container);
+
+// Poll for system changes (reads journal each time via API)
+setInterval(async () => {
+  const r = await fetch('api/system');
+  const sys = await r.json();
+  if (sys.ok && sys.system !== currentSystem) load();
+}, 2000);
+
+load();
+</script>
+</body>
+</html>

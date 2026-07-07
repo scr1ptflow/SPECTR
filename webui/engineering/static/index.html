@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTR — Engineering</title>
+<script src="/static/shared.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #ccc;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  padding: 20px;
+  min-height: 100vh;
+}
+  .lcars-bar {
+    background: #44aacc;
+  height: 32px;
+  border-radius: 0 16px 16px 0;
+  margin: 0 0 20px;
+  display: flex; align-items: center;
+  width: 55%;
+}
+.lcars-bar .label {
+  color: #000;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  padding-left: 24px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.section {
+  border: 1px solid #1a1a2a;
+  border-radius: 0 10px 10px 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+  .section h2 {
+    background: #0a0a14;
+    color: #44aacc;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-bottom: 1px solid #1a1a2a;
+  font-weight: 900;
+}
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #1a1a2a;
+  background: #0a0a14;
+}
+.tab-btn {
+  padding: 10px 20px;
+  font-family: 'Swiss 911', 'Arial Black', 'Impact', system-ui, sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: #aaa; }
+.tab-btn.active { color: #44aacc; border-bottom-color: #44aacc; }
+.tab-content { display: none; padding: 12px 16px; }
+.tab-content.active { display: block; }
+.material-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+}
+.material-card {
+  padding: 8px 12px;
+  border: 1px solid #0f0f1a;
+  border-radius: 0 6px 6px 6px;
+  background: #080810;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.material-card .name {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: #aaa;
+}
+.material-card .count {
+  font-size: 0.85rem;
+  color: #44aacc;
+  font-weight: 900;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+.material-card .count.low { color: #dd4444; }
+.material-card .count.med { color: #44aacc; }
+.material-card .count.high { color: #44dd88; }
+.section-block {
+  margin-bottom: 16px;
+}
+  .section-header {
+    color: #44aacc;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1a2a;
+  margin-bottom: 4px;
+  font-weight: 900;
+}
+.grade-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.grade-row.grade-count-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+.grade-label {
+  font-size: 0.55rem;
+  color: #555;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  font-weight: 900;
+}
+.engineer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 8px;
+}
+.engineer-card {
+  padding: 12px 16px;
+  border: 1px solid #0f0f1a;
+  border-radius: 0 6px 6px 6px;
+  background: #080810;
+}
+.engineer-card .name {
+  font-size: 0.78rem;
+  color: #44aacc;
+  margin-bottom: 6px;
+}
+.engineer-card .detail {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.7rem;
+  color: #666;
+}
+.engineer-card .detail span { color: #aaa; }
+.progress-bar {
+  height: 4px;
+  background: #1a1a2a;
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.progress-bar .fill {
+  height: 100%;
+  background: #44aacc;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.empty {
+  color: #555;
+  text-align: center;
+  padding: 40px 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+.error { color: #dd4444; padding: 12px 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .spinner { display: block; width: 28px; height: 28px; border: 3px solid #2a2a4a; border-top-color: #44aacc; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 40px auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 700px) {
+  body { padding: 10px; }
+  .lcars-bar { width: 90%; }
+  .lcars-bar .label { font-size: 0.9rem; padding-left: 16px; }
+  .material-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<div class="lcars-bar"><span class="label">Materials & Engineering</span></div>
+
+<div class="section">
+  <h2>Materials</h2>
+  <div class="tabs" id="mat-tabs"></div>
+  <div id="mat-content"></div>
+</div>
+
+<div class="section">
+  <h2>Engineers</h2>
+  <div id="eng-content"></div>
+</div>
+
+<script>
+let materials = [];
+let engineers = [];
+
+function countClass(cnt) {
+  if (cnt <= 10) return 'low';
+  if (cnt <= 50) return 'med';
+  return 'high';
+}
+
+function _gradeCount(cat) {
+  return {Raw: 4, Manufactured: 5, Encoded: 5}[cat] || 4;
+}
+
+function _sectionHtml(cat, sectioned) {
+  const secs = (sectioned && sectioned[cat]) || [];
+  const gc = _gradeCount(cat);
+  let html = '';
+  for (const sec of secs) {
+    html += `<div class="section-block">`;
+    html += `<div class="section-header">${esc(sec.section)}</div>`;
+    html += `<div class="grade-row grade-count-${gc}">`;
+    for (let g = 1; g <= gc; g++) {
+      html += `<div class="grade-label">Grade ${g}</div>`;
+    }
+    html += `</div>`;
+    html += `<div class="grade-row grade-count-${gc}">`;
+    for (let g = 1; g <= gc; g++) {
+      const m = sec.materials[g];
+      if (m) {
+        html += `<div class="material-card">
+          <span class="name">${esc(m.localised || m.name)}</span>
+          <span class="count ${countClass(m.count)}">${m.count}</span>
+        </div>`;
+      } else {
+        html += `<div class="material-card" style="opacity:0.25">
+          <span class="name">&mdash;</span>
+          <span class="count">0</span>
+        </div>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+  return html;
+}
+
+function renderMaterials(grouped, sectioned, totals) {
+  const tabsEl = document.getElementById('mat-tabs');
+  const contentEl = document.getElementById('mat-content');
+  const cats = ['Raw', 'Manufactured', 'Encoded', 'Other'].filter(c => grouped[c] && grouped[c].length);
+
+  if (!cats.length) {
+    tabsEl.innerHTML = '';
+    contentEl.innerHTML = '<div class="empty">No material data found.</div>';
+    return;
+  }
+
+  tabsEl.innerHTML = cats.map((c, i) => {
+    const total = totals && totals[c] ? totals[c] : '?';
+    return `<button class="tab-btn${i === 0 ? ' active' : ''}" data-cat="${c}">${c} (${grouped[c].length}/${total})</button>`;
+  }).join('');
+
+  contentEl.innerHTML = cats.map((c, i) => {
+    let inner;
+    if (c !== 'Other' && sectioned && sectioned[c] && sectioned[c].length) {
+      inner = _sectionHtml(c, sectioned);
+      const unknown = grouped[c].filter(m => !m.section);
+      if (unknown.length) {
+        inner += `<div class="section-block"><div class="section-header">Unknown</div><div class="material-grid">`;
+        inner += unknown.map(m =>
+          `<div class="material-card">
+            <span class="name">${esc(m.localised || m.name)}</span>
+            <span class="count ${countClass(m.count)}">${m.count}</span>
+          </div>`
+        ).join('');
+        inner += `</div></div>`;
+      }
+    } else {
+      inner = '<div class="material-grid">' +
+        grouped[c].map(m =>
+          `<div class="material-card">
+            <span class="name">${esc(m.localised || m.name)}</span>
+            <span class="count ${countClass(m.count)}">${m.count}</span>
+          </div>`
+        ).join('') +
+        '</div>';
+    }
+    return `<div class="tab-content${i === 0 ? ' active' : ''}" data-cat="${c}">${inner}</div>`;
+  }).join('');
+
+  tabsEl.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabsEl.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      contentEl.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = contentEl.querySelector(`.tab-content[data-cat="${btn.dataset.cat}"]`);
+      if (panel) panel.classList.add('active');
+    });
+  });
+}
+
+function renderEngineers(engineers) {
+  const el = document.getElementById('eng-content');
+  if (!engineers || !engineers.length) {
+    el.innerHTML = '<div class="empty">No engineer data found.</div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="engineer-grid">' +
+    engineers.map(e => {
+      const stageLabel = e.stage ? e.stage.replace(/_/g, ' ') : 'Unknown';
+      return `<div class="engineer-card">
+        <div class="name">${esc(e.name)}</div>
+        <div class="detail">Rank: <span>${e.rank}</span> &middot; Stage: <span>${esc(stageLabel)}</span></div>
+        <div class="progress-bar"><div class="fill" style="width:${e.progress}%"></div></div>
+      </div>`;
+    }).join('') +
+    '</div>';
+}
+
+async function load() {
+  try {
+    const [matRes, engRes] = await Promise.all([
+      fetch('api/materials').then(r => r.json()),
+      fetch('api/engineers').then(r => r.json()),
+    ]);
+
+    if (matRes.ok) renderMaterials(matRes.grouped, matRes.sectioned, matRes.totals);
+    else document.getElementById('mat-content').innerHTML = '<div class="error">' + esc(matRes.error) + '</div>';
+
+    if (engRes.ok) renderEngineers(engRes.engineers);
+    else document.getElementById('eng-content').innerHTML = '<div class="error">' + esc(engRes.error) + '</div>';
+  } catch (err) {
+    document.getElementById('mat-content').innerHTML = '<div class="error">' + esc(err) + '</div>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>
