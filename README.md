@@ -4,8 +4,6 @@
 ./tools              interactive menu (banner)
 ./tools web          start Web UI server (--port, --reload)
 ./tools config       edit journal path, Inara/EDSM API keys
-./tools backup       gzip-compress journals to backups/journals/ (incremental)
-./tools restore      decompress journals from backup back to journal dir
 ```
 
 ## Web UI
@@ -30,14 +28,13 @@ Single server with a tabbed cockpit sidebar at `/cockpit/`:
 | `/navigation/` | navigation | Route table with auto 3-state exobiology ticks |
 | `/engineering/` | engineering | Material inventory (Raw/Manufactured/Encoded) with collected/total counts, engineer standings |
 | `/carrier/` | carrier | Fleet carrier jump history, location, services |
-| `/notes/` | notes | Per-system note editor with lookup |
 | `/laboratory/` | laboratory | Exobiology samples — counts complete sets (3 scans = 1 sample), death-reset tracking |
 
 Swagger docs at each sub-app's `/docs` path.
 
 ## First Launch
 
-On first run, `./tools` (or `tools.bat`) prompts for:
+On first run, `./tools` prompts for:
 - **Journal path** (required) — your Elite Dangerous journal directory
 - **Inara API key** (optional)
 - **EDSM API key** (optional)
@@ -73,9 +70,6 @@ Upload a Spansh CSV route or load from server cache. 3-state auto-tick per body:
 ### carrier — Fleet Carrier (`/carrier/`)
 Dashboard showing carrier location, jump history, services, and finance data from journal events.
 
-### notes — System Notes (`/notes/`)
-Per-system note editor with system lookup, tag support, and CRUD via API.
-
 ### engineering — Materials & Engineers (`/engineering/`)
 Material inventory grouped by Raw/Manufactured/Encoded with sectioned layout by grade. Category tabs show collected vs total unique types (e.g. `Raw (20/28)`). Threshold-based count coloring (low/med/high). Engineer standings with rank, stage, and progress bars.
 
@@ -85,16 +79,6 @@ Unsold organic sample inventory. Groups by genus, counts only complete sets (3 s
 ## config (`./tools config`)
 
 Interactive submenu to set/update journal path, Inara API key, EDSM API key. Also accessible via `c` in the interactive menu.
-
-## Backup/Restore (`./tools backup` / `./tools restore`)
-
-Compresses all `Journal.*.log` files from the journal directory into `backups/journals/` using gzip. Only re-compresses files whose modification time or size changed (incremental via `manifest.json`). Restore decompresses them back to the original journal directory — useful before reinstalling the game.
-
-```
-./tools backup               # incremental gzip backup
-./tools restore              # restore all files from backup
-python3 tools_backup.py list     # list backed-up files with compression ratio
-```
 
 ## Background
 

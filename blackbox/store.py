@@ -38,17 +38,6 @@ def _init_schema(conn):
         )"""
     )
 
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            system_name TEXT NOT NULL,
-            note_text TEXT NOT NULL DEFAULT '',
-            tags TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )"""
-    )
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_notes_system ON notes(system_name)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_events_event ON events(event)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp)")
     conn.commit()

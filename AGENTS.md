@@ -8,7 +8,7 @@ Web UI tools for Elite Dangerous, sharing a venv and config. All functionality i
 
 ## Session state — next: TBD
 
-Completed: #1 Material & Engineering Dashboard, #2 Carrier Navigator, #3 Notes, #4 Laboratory, #5 Journal Backup/Restore, various fixes (EDSM timeout, notes PUT, carrier event name, ship filter, SQL indexes, batch commits, removed recorder_state.json).
+Completed: #1 Material & Engineering Dashboard, #2 Carrier Navigator, #4 Laboratory, #5 Journal Backup/Restore, various fixes (EDSM timeout, carrier event name, ship filter, SQL indexes, batch commits, removed recorder_state.json).
 - Colour-coded each tool with a unique LCARS accent (red Flight Recorder, teal Ship Status, orange Missions, mint LRS, yellow Captain's Log, deep blue System Map, purple Navigation, cyan Engineering, lavender Carrier, green Laboratory).
 - Laboratory death-reset: filters ScanOrganic/SellOrganicData to only count events after most recent `Died` timestamp.
 - Laboratory counts complete sample sets (3 scans = 1 set), hides partial scans.
@@ -93,10 +93,6 @@ webui/
     server.py   — Carrier API (jump history, location, services)
     static/
       index.html — fleet carrier dashboard
-  notes/
-    server.py   — Notes CRUD API per system
-    static/
-      index.html — note editor with system lookup
   laboratory/
     server.py   — Laboratory API (unsold exobiology samples, values)
     static/

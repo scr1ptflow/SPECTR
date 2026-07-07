@@ -24,7 +24,6 @@ from webui.system_map.server import sub_app as system_map_app
 from webui.navigation.server import sub_app as navigation_app
 from webui.engineering.server import sub_app as engineering_app
 
-from webui.notes.server import sub_app as notes_app
 from webui.laboratory.server import sub_app as laboratory_app
 
 app = FastAPI(title="SPECTR")
@@ -39,7 +38,6 @@ app.mount("/system-map", system_map_app)
 app.mount("/navigation", navigation_app)
 app.mount("/engineering", engineering_app)
 
-app.mount("/notes", notes_app)
 app.mount("/laboratory", laboratory_app)
 
 _recorder: Recorder | None = None
