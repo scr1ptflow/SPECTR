@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPECTR Ship Status</title>
 <script src="/static/shared.js"></script>
+<link rel="stylesheet" href="/static/lcars.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -110,9 +111,9 @@
     flex-shrink: 0;
   }
   .module .mini-fill {
+    display: block;
     height: 100%;
     border-radius: 4px;
-    background: #00bbcc;
     transition: width 0.3s;
   }
   .module .mini-pct {
@@ -260,12 +261,13 @@ async function load() {
     const labels = { hardpoints: 'Hardpoints', utility: 'Utility Mounts', core: 'Core Internal', optional: 'Optional Internal', other: 'Other' };
     let h = `<div class="cat-header">${labels[cat] || cat}</div>`;
     for (const m of items) {
-      const pct = (m.health * 100).toFixed(0);
+      const pct = (m.health != null ? m.health : 0) * 100;
+      const color = pct >= 90 ? '#44aa66' : pct >= 30 ? '#ff9900' : '#dd4444';
       const rating = m.rating ? ` (${esc(m.rating)})` : '';
       h += `<div class="module">
         <span class="name">${esc(m.name)}${rating}</span>
-        <span class="mini-bar"><span class="mini-fill" style="width:${pct}%"></span></span>
-        <span class="mini-pct">${pct}%</span>
+        <span class="mini-bar"><span class="mini-fill" style="width:${pct}%;background:${color}"></span></span>
+        <span class="mini-pct">${pct.toFixed(0)}%</span>
       </div>`;
     }
     return h;

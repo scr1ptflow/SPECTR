@@ -2,6 +2,7 @@ import json
 import os
 import glob
 import re
+import time
 import sqlite3
 
 from webui._utils import get_latest_journal
@@ -341,12 +342,29 @@ def read_status(journal_dir: str) -> dict | None:
         return None
 
 
+def _status_is_fresh(journal_dir: str) -> bool:
+    path = os.path.join(journal_dir, "Status.json")
+    if not os.path.exists(path):
+        return False
+    try:
+        age = time.time() - os.path.getmtime(path)
+        return age < 300  # fresh if modified within 5 minutes
+    except OSError:
+        return False
+
+
 def _ship_name(loadout: dict) -> str:
-    for key in ("ShipName", "UserShipName", "Ship_Localised"):
+    v = loadout.get("Ship_Localised")
+    if v:
+        return v
+    known = _known_ship_name(loadout.get("Ship", ""))
+    if known:
+        return known
+    for key in ("ShipName", "UserShipName"):
         v = loadout.get(key)
         if v:
             return v
-    return _known_ship_name(loadout.get("Ship", ""))
+    return known or ""
 
 
 def _known_ship_name(raw: str) -> str:
@@ -481,6 +499,7 @@ def get_ship_data(journal_dir: str, db_path: str | None = None) -> dict:
                 result["shield_gen_health"] = m.get("Health", 1.0)
             result["modules"].append({
                 "slot": slot,
+                "item": item,
                 "name": _module_name(m),
                 "rating": _module_rating(m),
                 "health": m.get("Health", 1.0),
@@ -503,20 +522,21 @@ def get_ship_data(journal_dir: str, db_path: str | None = None) -> dict:
             if status_ship and status_ship != loadout_ship:
                 result["ship"] = _known_ship_name(status_ship)
         for sm in status.get("Modules", []):
-            slot = sm.get("Slot", "")
+            item = sm.get("Item", "")
             health = sm.get("Health")
-            if slot and health is not None:
-                status_module_health[slot] = health
+            if item and health is not None:
+                status_module_health[item] = health
 
     if economy_from_scan:
         result["economy"] = economy_from_scan
     elif not db_path:
         result["economy"] = find_current_economy(journal_dir)
 
-    # override module health from real-time Status.json
-    for m in result["modules"]:
-        if m["slot"] in status_module_health:
-            m["health"] = status_module_health[m["slot"]]
+    # override module health from real-time Status.json (only if game is running)
+    if _status_is_fresh(journal_dir):
+        for m in result["modules"]:
+            if m["item"] in status_module_health:
+                m["health"] = status_module_health[m["item"]]
 
     # cargo manifest from Cargo.json (updated in real-time) or fallback to journal
     cargo_manifest = _read_cargo_json(journal_dir) or cargo_inv_from_scan

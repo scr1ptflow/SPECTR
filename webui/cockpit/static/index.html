@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPECTR</title>
+<link rel="stylesheet" href="/static/lcars.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -17,36 +18,135 @@
   .sidebar {
     width: 200px;
     min-width: 200px;
-    background: #0a0a1a;
-    border-right: 2px solid #1a1a2e;
+    background: #080810;
+    border-right: 1px solid #15152a;
     display: flex;
     flex-direction: column;
-    padding-top: 8px;
+    padding-top: 0;
+    position: relative;
   }
+
   .sidebar .brand {
     color: #ff9900;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 900;
-    letter-spacing: 4px;
+    letter-spacing: 5px;
     text-transform: uppercase;
     text-align: center;
-    padding: 20px 12px 28px;
-    border-bottom: 1px solid #1a1a2e;
-    margin-bottom: 8px;
+    padding: 24px 12px 8px;
+    position: relative;
   }
+  .sidebar .brand::after {
+    content: 'command interface';
+    display: block;
+    color: #555;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  .sidebar .top-elbow {
+    padding: 12px 16px 4px;
+  }
+  .sidebar .top-elbow .elbow-row {
+    display: flex;
+    align-items: flex-end;
+    height: 24px;
+  }
+  .sidebar .top-elbow .elbow-row .bar {
+    height: 8px;
+    background: #ff9900;
+    border-radius: 0 4px 4px 0;
+  }
+  .sidebar .top-elbow .elbow-row .bar.w1 { width: 40px; }
+  .sidebar .top-elbow .elbow-row .bar.w2 { width: 80px; margin-top: 4px; opacity: 0.5; }
+  .sidebar .top-elbow .elbow-row .corner {
+    width: 24px; height: 24px;
+    border-right: 8px solid #ff9900;
+    border-bottom: 8px solid #ff9900;
+    border-radius: 0 0 4px 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar .nav-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+  }
+
   .tab {
-    padding: 14px 20px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 13px 20px 13px 16px;
     cursor: pointer;
-    color: #666;
-    font-size: 0.85rem;
+    color: #555;
+    font-size: 0.82rem;
     letter-spacing: 2px;
     text-transform: uppercase;
-    border-left: 3px solid transparent;
-    transition: all 0.15s;
+    transition: all 0.2s;
     font-weight: 700;
+    border-left: 3px solid transparent;
   }
-  .tab:hover { color: #aaa; background: #0f0f2a; }
-  .tab.active { color: #ff9900; border-left-color: #ff9900; background: #0f0f2a; }
+  .tab::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: var(--tab-color, #ff9900);
+    border-radius: 2px 0 0 2px;
+    transition: height 0.2s;
+  }
+  .tab:hover {
+    color: #999;
+    background: rgba(255,255,255,0.02);
+    border-left-color: rgba(255,153,0,0.3);
+  }
+  .tab:hover::before { height: 60%; }
+  .tab.active {
+    color: #ff9900;
+    border-left-color: #ff9900;
+    background: linear-gradient(90deg, rgba(255,153,0,0.06), transparent);
+  }
+  .tab.active::before {
+    height: 70%;
+    background: #ff9900;
+    box-shadow: 0 0 8px rgba(255,153,0,0.5);
+  }
+
+  .tab .tab-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-left: auto;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .tab.active .tab-indicator {
+    opacity: 1;
+    background: #ff9900;
+    box-shadow: 0 0 6px rgba(255,153,0,0.6);
+  }
+
+  .sidebar .bottom-bar {
+    padding: 12px 16px;
+    border-top: 1px solid #15152a;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .sidebar .bottom-bar .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #2a2a4a;
+  }
+  .sidebar .bottom-bar .dot.active { background: #44aa66; box-shadow: 0 0 6px rgba(68,170,102,0.5); }
 
   .main {
     flex: 1;
@@ -76,13 +176,19 @@
       flex-direction: row;
       overflow-x: auto;
       border-right: none;
-      border-bottom: 2px solid #1a1a2e;
-      padding-top: 0;
+      border-bottom: 1px solid #15152a;
       order: 1;
+      padding-top: 0;
     }
     .sidebar .brand {
       display: none;
     }
+    .sidebar .top-elbow { display: none; }
+    .sidebar .nav-section {
+      flex-direction: row;
+      padding: 0;
+    }
+    .sidebar .bottom-bar { display: none; }
     .tab {
       padding: 12px 14px;
       font-size: 0.65rem;
@@ -91,7 +197,9 @@
       border-left: none;
       border-top: 3px solid transparent;
     }
+    .tab::before { display: none; }
     .tab.active { border-left: none; border-top-color: #ff9900; }
+    .tab .tab-indicator { display: none; }
     .tool-panel { padding: 8px; }
   }
 </style>
@@ -99,17 +207,41 @@
 <body>
 
 <div class="sidebar">
-  <div class="brand">SPECTR</div>
-  <div class="tab active" data-tool="system-map">System Map</div>
-  <div class="tab" data-tool="ship">Ship</div>
-  <div class="tab" data-tool="missions">Missions</div>
-  <div class="tab" data-tool="lrs">LRS</div>
-  <div class="tab" data-tool="route">Navigation</div>
-  <div class="tab" data-tool="blackbox">Flight Recorder</div>
-  <div class="tab" data-tool="captains-log">Captains Log</div>
-  <div class="tab" data-tool="engineering">Engineering</div>
+  <div class="top-elbow">
+    <div class="elbow-row">
+      <div class="bar w1"></div>
+      <div class="corner"></div>
+    </div>
+    <div class="elbow-row" style="justify-content:flex-end">
+      <div class="bar w2"></div>
+    </div>
+  </div>
 
-  <div class="tab" data-tool="laboratory">Laboratory</div>
+  <div class="brand">SPECTR</div>
+
+  <div class="nav-section">
+    <div class="tab active" data-tool="system-map" style="--tab-color:#3366cc">System Map<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="ship" style="--tab-color:#00bbcc">Ship<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="missions" style="--tab-color:#ff9900">Missions<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="lrs" style="--tab-color:#55bb88">LRS<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="route" style="--tab-color:#8844aa">Navigation<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="blackbox" style="--tab-color:#cc3300">Flight Recorder<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="captains-log" style="--tab-color:#ffcc00">Captains Log<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="engineering" style="--tab-color:#44aacc">Engineering<span class="tab-indicator"></span></div>
+    <div class="tab" data-tool="laboratory" style="--tab-color:#88cc44">Laboratory<span class="tab-indicator"></span></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
 </div>
 
 <div class="main">
@@ -145,8 +277,6 @@
   <div class="tool-panel" id="panel-engineering">
     <iframe src="/engineering/"></iframe>
   </div>
-
-
 
   <div class="tool-panel" id="panel-laboratory">
     <iframe src="/laboratory/"></iframe>
