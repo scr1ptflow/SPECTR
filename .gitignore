@@ -1,11 +1,3 @@
 __pycache__/
 *.pyc
 .venv/
-*.db
-config.json
-*.egg-info/
-navigation_cache/
-*.db-shm
-*.db-wal
-GUIDE.md
-backups/
