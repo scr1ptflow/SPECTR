@@ -16,10 +16,6 @@ TAB_ITEMS = [
 
 
 class Sidebar(Widget):
-    def __init__(self) -> None:
-        super().__init__()
-        self._active_tab = "dashboard"
-
     def compose(self) -> ComposeResult:
         yield Static("SPECTR", id="sidebar-title", classes="sidebar-title")
         with Vertical(id="tab-list"):
@@ -39,7 +35,6 @@ class Sidebar(Widget):
         self.app._show_panel(tab_id)
 
     def _activate_tab(self, tab_id: str) -> None:
-        self._active_tab = tab_id
         for button in self.query(Button):
             button.remove_class("active")
         active = self.query_one(f"#tab-{tab_id}")

@@ -134,6 +134,114 @@ class SpectrApp(App):
     #lab-summary > .lab-stat:first-child {
         margin-right: 1;
     }
+
+    #ship-name {
+        text-align: center;
+        padding: 0 0 1 0;
+        height: 3;
+    }
+
+    #ship-stats {
+        height: 5;
+        margin-bottom: 1;
+    }
+
+    #ship-stats > .ship-stat {
+        width: 1fr;
+        height: 100%;
+        border: solid $primary;
+        text-align: center;
+        padding: 1;
+        content-align: center middle;
+    }
+
+    #ship-stats > .ship-stat:first-child {
+        margin-right: 1;
+    }
+
+    #ship-stats > .ship-stat:last-child {
+        margin-left: 1;
+    }
+
+    #dashboard-grid {
+        grid-size: 2 4;
+        grid-columns: 1fr 1fr 1fr 1fr;
+        grid-rows: 1fr 1fr;
+        height: 1fr;
+        width: 100%;
+        grid-gutter: 1;
+    }
+
+    .dashboard-cell {
+        border: solid $primary 30%;
+        padding: 0 1;
+        overflow-y: auto;
+    }
+
+    #cmdr-name {
+        text-align: center;
+        text-style: bold;
+        height: 3;
+        padding: 0 0 1 0;
+    }
+
+    #cmdr-layout {
+        height: 1fr;
+    }
+
+    #cmdr-left {
+        width: 1fr;
+        height: auto;
+    }
+
+    #cmdr-right {
+        width: 1fr;
+        height: auto;
+        border-left: solid $primary 30%;
+        padding-left: 1;
+    }
+
+    #ranks-columns {
+        height: auto;
+    }
+
+    #ranks-left, #ranks-right {
+        width: 1fr;
+    }
+
+    .rank-entry {
+        height: 4;
+    }
+
+    #cmdr-finances {
+        height: auto;
+        margin-top: 1;
+    }
+
+    .finance-row {
+        height: 3;
+    }
+
+    .finance-label {
+        width: auto;
+        text-style: bold;
+    }
+
+    .finance-value {
+        width: 1fr;
+        text-align: right;
+    }
+
+    .section-title {
+        text-style: bold;
+        padding: 0 0 1 0;
+        border-bottom: solid $primary;
+        margin-bottom: 1;
+    }
+
+    .section-spacer {
+        height: 1;
+    }
     """
 
     def __init__(self) -> None:
@@ -150,17 +258,19 @@ class SpectrApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
+        self._panels: dict[str, PanelBase] = {}
+        for panel, (tab_id, _) in zip(
+            self.query_one("#content").children, TAB_PANELS.items()
+        ):
+            self._panels[tab_id] = panel
+        self._current_panel: str | None = None
         self._show_panel("dashboard")
 
-
     def _show_panel(self, tab_id: str) -> None:
-        for panel in self.query_one("#content").children:
-            panel.add_class("hidden")
-        for panel in self.query_one("#content").children:
-            for tid, pcls in TAB_PANELS.items():
-                if tid == tab_id and isinstance(panel, pcls):
-                    panel.remove_class("hidden")
-                    return
+        if self._current_panel is not None:
+            self._panels[self._current_panel].add_class("hidden")
+        self._panels[tab_id].remove_class("hidden")
+        self._current_panel = tab_id
 
 
 def main() -> None:
