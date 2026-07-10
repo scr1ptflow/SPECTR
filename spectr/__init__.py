@@ -1,1 +1,1 @@
-"""SPECTR - Elite Dangerous TUI Companion."""
+"""SPECTR - Elite Dangerous Desktop Companion."""

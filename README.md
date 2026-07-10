@@ -1,51 +1,53 @@
-# SPECTR — Elite Dangerous TUI Companion
+# SPECTR — Elite Dangerous Desktop Companion
 
-Terminal UI for Elite Dangerous commanders. Reads game journals to display commander stats, ship info, location, missions, exobiology samples, and more.
-
-## Requirements
-
-- Python 3.11+
-- Elite Dangerous (journal files from Odyssey)
+PySide6 desktop GUI for Elite Dangerous commanders with a **Star Trek LCARS**-themed interface. Reads game journals to display commander stats, ship info, location, missions, exobiology data, Galnet news, and live server status.
 
 ## Quick Start
 
 ```bash
-./run.sh
+./run
 ```
 
-The launcher creates a virtual environment and installs dependencies automatically on first run.
+Creates a virtual environment, installs PySide6, and launches the app. Double-click `SPECTR.desktop` from the file manager for an app-like experience (no terminal).
+
+## Features
+
+| Tab | What it shows |
+|-----|---------------|
+| **NEWS** | Galnet articles with day-selector buttons (last 5 days), community goals |
+| **COMMANDER** | Ranks with progress bars, powerplay, credits, rebuy, notoriety |
+| **SHIP** | Ship type/name, shield/fuel/hull health bars, full module loadout |
+| **LOCATION** | Current star system, body, and station |
+| **MISSIONS** | Recent mission history |
+| **LABORATORY** | Exobiology sample tracking with value prediction per species |
+| **SETTINGS** | Journal path, commander name, Inara/EDSM API keys |
+
+### LCARS Interface
+- Custom-painted side tab navigation with per-tab accent colours
+- Data frames with coloured left accent rails
+- Colour-thresholded health bars (green ≥ 65%, yellow ≥ 30%, red < 30%)
+- Status bar with live server status indicator (ONLINE/OFFLINE/MAINTENANCE)
+- Game time (UTC +1286 years = Elite Dangerous timeline) / local system clock — click to toggle
+- All widgets painted via `QPainter` — no images, pure vector LCARS styling
+
+### Live Server Status
+Async checks every 3 minutes against `auth.frontierstore.net` and `elite.frontier.co.uk`. Status colour-coded in the top bar.
 
 ## Configuration
 
-Settings are stored at `~/.config/spectr/config.json`. Configure via the **Settings** tab in the app:
+Settings are stored at `~/.config/spectr/config.json` or configure via the **SETTINGS** tab:
 
-- **Journal Path** — Location of Elite Dangerous journal files (typically `~/Saved Games/Frontier Developments/Elite Dangerous`)
+- **Journal Path** — `~/Saved Games/Frontier Developments/Elite Dangerous`
 - **Commander Name** — Your CMDR name
-- **Inara API Key** — For Inara integration (optional)
-- **EDSM API Key** — For EDSM integration (optional)
+- **Inara API Key** — Optional, enables rank fallback data
 
-## Tabs
+## Requirements
 
-| Tab | Description |
-|-----|-------------|
-| Dashboard | Overview: credits, current system, ship |
-| Commander | Commander profile with ranks, progress bars, squadron, powerplay |
-| Ship | Ship type, name, module loadout |
-| Location | Current star system, body, station |
-| Missions | Active mission history |
-| Laboratory | Exobiology sample tracking with value prediction |
-| Settings | Configuration editor |
+- Python 3.11+
+- PySide6 (auto-installed by the launcher)
+- Elite Dangerous (journal files from Odyssey)
 
-### Commander Panel Features
-
-- **Ranks** — Combat, Trade, Explore, CQC, Empire, Federation, Soldier, Exobiologist with rank name labels and colored progress bars (red < 30%, yellow 30–65%, green ≥ 65%)
-- **Squadron** — Displayed next to commander name
-- **Powerplay** — Power, rank, merits shown in finances
-- **Credits / Rebuy / Notoriety** — From journal, optionally enriched via Inara
-
-Data sources: journal `Rank`/`Progress` events (primary), Inara API merged as fallback when configured.
-
-## Run Manually
+## Manual Launch
 
 ```bash
 python -m spectr

@@ -1,7 +1,18 @@
 """Elite Dangerous exobiology species database.
 
-Base value = payout for a complete set (3 samples) at Vista Genomics.
-First footfall bonus: 5x total (base + 4x bonus).
+This module defines every known organic species that can be sampled with
+the Genetic Sampler and sold at Vista Genomics.
+
+Base value = payout for a complete set (3 samples of the same species).
+First footfall bonus: 5x total (base value × 5 because you get the base
+value + 4x bonus — the formula is base + 4*base = 5*base).
+
+Key functions used by journal.py:
+  base_value(name)   — returns the payout for one set of *name*
+  lookup(name)       — returns the SpeciesInfo object for *name*
+
+Data is stored in the SPECIES dict keyed by species name, with a secondary
+SPECIES_BY_NAME lookup index for case-insensitive searching.
 """
 
 from __future__ import annotations
@@ -10,8 +21,22 @@ from typing import Optional
 
 
 class SpeciesInfo:
-    __slots__ = ("genus", "name", "base_value", "colony_range", "atmospheres",
-                 "temp_range", "gravity_max", "notes")
+    """Metadata for a single exobiology species.
+
+    Attributes:
+      genus        — Biological genus (e.g. "Bacterium", "Stratum")
+      name         — Full display name (e.g. "Stratum Tectonicas")
+      base_value   — CR payout for one complete set (3 samples)
+      colony_range — Max distance from star where it appears (Ly)
+      atmospheres  — Atmosphere types it can grow in
+      temp_range   — Temperature range (Kelvin)
+      gravity_max  — Maximum surface gravity (g)
+      notes        — Player notes / identification tips
+    """
+    __slots__ = (
+        "genus", "name", "base_value", "colony_range", "atmospheres",
+        "temp_range", "gravity_max", "notes",
+    )
 
     def __init__(
         self,
@@ -34,7 +59,12 @@ class SpeciesInfo:
         self.notes = notes
 
 
+# -- Species database ------------------------------------------------
+# Keyed by full name (e.g. "Aleoida Arcus").
+# Values updated from Canonn Research and community sources.
+
 SPECIES: dict[str, SpeciesInfo] = {
+
     # ── Aleoida ──────────────────────────────────────────────────
     "Aleoida Arcus": SpeciesInfo("Aleoida", "Aleoida Arcus", 7_252_500,
         colony_range=150, atmospheres="CO2", temp_range="175-180 K"),
@@ -247,6 +277,9 @@ SPECIES: dict[str, SpeciesInfo] = {
         colony_range=200, notes="High value"),
 }
 
+# -- Case-insensitive lookup index ----------------------------------
+# Built once at module import so lookups are fast O(1) dict access.
+
 SPECIES_BY_NAME: dict[str, SpeciesInfo] = {}
 for s in SPECIES.values():
     key = s.name.lower()
@@ -254,16 +287,27 @@ for s in SPECIES.values():
         SPECIES_BY_NAME[key] = s
 
 
+# -- Public API -----------------------------------------------------
+
 def lookup(name: str) -> Optional[SpeciesInfo]:
+    """Look up a species by full name (case-insensitive)."""
     return SPECIES_BY_NAME.get(name.lower().strip())
 
 
 def base_value(name: str) -> int:
+    """Return the base CR value for a complete set of *name*.
+
+    Returns 0 if the species is not in the database.
+    """
     info = lookup(name)
     return info.base_value if info else 0
 
 
 def total_value(name: str, first_footfall: bool = False) -> int:
+    """Return the total CR value for a set, optionally with first-footfall bonus.
+
+    First footfall bonus = 5x base value (the game pays base + 4× bonus).
+    """
     bv = base_value(name)
     if first_footfall:
         return bv * 5
@@ -271,13 +315,19 @@ def total_value(name: str, first_footfall: bool = False) -> int:
 
 
 def species_by_genus(genus: str) -> list[SpeciesInfo]:
+    """Return all species belonging to a given genus (case-insensitive)."""
     return [s for s in SPECIES.values() if s.genus.lower() == genus.lower()]
 
 
 def all_genera() -> list[str]:
+    """Return a sorted list of all genus names present in the database."""
     return sorted(set(s.genus for s in SPECIES.values()))
 
 
 def search(query: str) -> list[SpeciesInfo]:
+    """Search species by name or genus (substring, case-insensitive)."""
     q = query.lower()
-    return [s for s in SPECIES.values() if q in s.name.lower() or q in s.genus.lower()]
+    return [
+        s for s in SPECIES.values()
+        if q in s.name.lower() or q in s.genus.lower()
+    ]

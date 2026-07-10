@@ -1,33 +1,57 @@
 # SPECTR — Agent Guide
 
 ## Project Structure
+- `run` — Bash launcher, sets up .venv, installs PySide6, generates SPECTR.desktop
 - `main.py` — Entry point for `python main.py`
 - `spectr/__main__.py` — Entry point for `python -m spectr`
-- `spectr/app.py` — Textual App class (CSS styles, tab registry, panel switching)
-- `spectr/config.py` — JSON config at `~/.config/spectr/config.json`
-- `spectr/journal.py` — JournalReader: reads Elite journal files, tracks ranks/progress, exobiology, squadron, powerplay
-- `spectr/inara.py` — InaraClient: fetches commander profile from Inara API (`/inapi/v1/`)
-- `spectr/ui/sidebar.py` — Left sidebar with vertical tab buttons
-- `spectr/ui/panels.py` — One PanelBase subclass per tab
+- `spectr/app.py` — QApplication setup, `main()` with logging config and KeyboardInterrupt handler
+- `spectr/config.py` — JSON config at `~/.config/spectr/config.json`, with `validate_config()`
+- `spectr/journal.py` — JournalReader: parses Elite journal files for ranks/progress, exobiology, powerplay, ship, location. File list is cached per directory.
+- `spectr/inara.py` — InaraClient: fetches commander profile from Inara API (`/inapi/v1/`), used as rank fallback in CommanderPanel
+- `spectr/galnet.py` — GalnetFetcher: scrapes community.elitedangerous.com for news articles
+- `spectr/server_status.py` — ServerStatusChecker: async QNetworkAccessManager probes to Frontier auth/game servers
+- `spectr/data/species.py` — Exobiology species database (283 entries), `base_value()` / `lookup()` / `total_value()` API
+- `spectr/data/icon.svg` — FUI-style app icon
+- `spectr/ui/main_window.py` — MainWindow (QMainWindow) with FUITab sidebar + QStackedWidget, tab registry, server status integration, window state persistence via QSettings
+- `spectr/ui/panels.py` — 7 PanelBase subclasses: Dashboard, Commander, Ship, Location, Missions, Laboratory, Settings. Network fetches use QThread workers.
+- `spectr/ui/widgets.py` — All FUI custom widgets: FUIBar, FUIPanel, FUITab, FUIButton, FUIProgressBar, FUIContinuousBar, FUIStatusBar. Backward-compatible aliases (LcarsBlock, LcarsTab, etc.)
 
 ## Conventions
-- Panel classes extend `PanelBase(Static)`, placed in `panels.py`
-- Each panel is registered in `TAB_PANELS` dict in `app.py` and has a matching sidebar entry in `TAB_ITEMS` in `sidebar.py`
-- Use `self.app.journal` / `self.app.config` to access shared state from panels
-- Tab switching uses direct `self.app._show_panel()` calls from sidebar (no message passing)
-- All panels are pre-mounted in `compose()`; `.hidden` CSS class toggles visibility
-- CSS lives in `app.py` as a class attribute on `SpectrApp`
-- Run: `./run.sh` (auto-creates venv if missing)
+- Panel classes extend `PanelBase(QWidget)`, placed in `panels.py`
+- Each panel is registered in `TAB_PANELS` dict (class) and `TAB_ITEMS` list (id, label, colour) in `main_window.py`
+- Panels access shared state via `self.window.journal` / `self.window.config`
+- Panels define `refresh()` called each time the tab becomes visible
+- All UI code uses PySide6 (Qt for Python)
+- Network fetches (Galnet, Community Goals) use `QThread` subclasses with signals to keep UI responsive
+- FUI colour palette in `widgets.py`: CYAN, ORANGE, BLUE, PURPLE, TEAL, YELLOW, RED, PINK, GRAY, WHITE, DARK/DARK2/DARK3
+- Names: snake_case for methods/vars, PascalCase for classes
+- `from __future__ import annotations` at top of every .py file
+- All modules use `logging.getLogger(__name__)` for diagnostics
 
 ## Key Data Flow
-- **Ranks & Progress** — Primary source is journal `Rank` / `Progress` events; Inara API merged as fallback
-- **Credits** — Journal `LoadGame.Credits`; overridden by Inara if available
+- **Ranks & Progress** — Journal `Rank` / `Progress` events; Inara API merged as fallback when journal data is empty
+- **Credits** — Journal `LoadGame.Credits`
 - **Squadron** — Journal `LoadGame.SquadronName`
-- **Powerplay** — Journal `Powerplay` event (power, rank, merits)
+- **Powerplay** — Journal `Powerplay` / `PowerplayJoin` / `PowerplayDefect` events
+- **Server Status** — `ServerStatusChecker` fires async HEAD to `auth.frontierstore.net` + `elite.frontier.co.uk`; emits ONLINE/OFFLINE/MAINTENANCE/UNKNOWN
+- **Galnet** — `GalnetFetcher.get_articles("/galnet")` scrapes HTML in a `_GalnetWorker` QThread; articles cached in memory; day buttons filter client-side
+- **Community Goals** — `_CommunityGoalsWorker` QThread filters Galnet articles for CG-related keywords
+- **Exobiology** — `JournalReader.get_organic_summary()` single-pass aggregates ScanOrganic + SellOrganicData across all journal files
+- **Missions** — Active missions (MissionAccepted minus completed/failed/abandoned) and completed/failed/abandoned outcomes shown separately
+- **Location** — System, body, body type, distance from star, station, faction, government, economy, security, population
+- **Ship** — Module data includes engineering grade/experimental display; Status.json read cross-platform
 - **InaraClient** — Uses `header` block with `appName`/`appVersion`/`APIkey`/`commanderName`, events with `eventName`/`eventTimestamp`/`eventData`. Endpoint: `https://inara.cz/inapi/v1/`
 
-## Style
-- No comments in code
-- No emoji in output
-- Names: snake_case for methods/vars, PascalCase for classes
-- Imports: `from __future__ import annotations` at top
+## FUI Widget Architecture
+- `FUIBar` — Thin horizontal strip, used as accent line
+- `FUIPanel` (alias `LcarsBlock`) — Data frame with coloured left accent rail + optional title
+- `FUITab` (alias `LcarsTab`) — Sidebar nav pill; active fills with accent colour, inactive shows rail only
+- `FUIButton` (alias `LcarsPill`) — Fully rounded action button
+- `FUIProgressBar` (alias `HealthBar`) — 10-segment progress bar, green >= 8th, yellow 2nd-7th, red < 2nd
+- `FUIContinuousBar` — Single continuous bar with red/yellow/green position-based coloring
+- `FUIStatusBar` (alias `LcarsStatusBar`) — Top bar: server status left, toggleable game/system clock right
+
+## Sidebar / Tab System
+- Sidebar uses FUITab buttons (not QListWidget), manually toggled via `_switch_tab()`
+- `_switch_tab(tab_id)` updates button states, stack widget, status bar accent colour, and calls `panel.refresh()`
+- Status bar accent follows active tab colour from `_TAB_COLORS` dict
