@@ -20,6 +20,7 @@ from spectr.inara import InaraClient
 from spectr.ui.widgets import (
     CYAN, ORANGE, BLUE, PURPLE, TEAL, YELLOW, RED, PINK, GREEN, GRAY, GRAY_L, WHITE, DARK, DARK2, DARK3,
     LcarsBar, LcarsBlock, LcarsPill, HealthBar, lcars_color,
+    SystemMapWidget,
 )
 
 log = logging.getLogger(__name__)
@@ -47,6 +48,59 @@ class _GalnetWorker(QThread):
         except Exception as exc:
             log.warning("Galnet fetch failed: %s", exc)
             self.done.emit([])
+
+
+class _BodiesWorker(QThread):
+    """Fetch system bodies from EDSM API."""
+    done = Signal(list)
+
+    def __init__(self, system: str, parent=None):
+        super().__init__(parent)
+        self.system = system
+
+    def run(self):
+        try:
+            client = EDSMClient()
+            data = client.get_system_details(self.system)
+            if data and isinstance(data, dict):
+                raw_bodies = data.get("bodies", [])
+                self.done.emit([_normalize_edsm_body(b) for b in raw_bodies])
+            else:
+                self.done.emit([])
+        except Exception as exc:
+            log.warning("Bodies fetch failed: %s", exc)
+            self.done.emit([])
+
+
+def _normalize_edsm_body(b: dict) -> dict:
+    """Convert EDSM body fields to ED journal format."""
+    terraform = b.get("isTerraformable", False)
+    subtype = b.get("subType", "")
+    spectral = b.get("spectralClass", "")
+    star_type = spectral[0] if spectral else ""
+    is_star = "Star" in subtype or b.get("type") == "Star"
+    return {
+        "BodyId": b.get("bodyId", -1),
+        "Name": b.get("name", ""),
+        "DistanceFromArrivalLs": b.get("distanceToArrival"),
+        "StarType": star_type if is_star else "",
+        "Subclass": spectral,
+        "StellarMass": b.get("solarMasses"),
+        "Radius": b.get("solarRadius"),
+        "SurfaceTemperature": b.get("surfaceTemperature"),
+        "PlanetClass": subtype if not is_star else "",
+        "Atmosphere": b.get("atmosphereType", ""),
+        "Volcanism": b.get("volcanismType", ""),
+        "MassEm": b.get("earthMasses"),
+        "SurfaceGravity": b.get("surfaceGravity"),
+        "SemiMajorAxis": b.get("semiMajorAxis"),
+        "OrbitalPeriod": b.get("orbitalPeriod"),
+        "RotationPeriod": b.get("rotationalPeriod"),
+        "Landable": b.get("isLandable"),
+        "TerraformState": "Terraformable" if terraform else "",
+        "Rings": b.get("rings", []),
+        "Materials": b.get("materials", []),
+    }
 
 
 class PanelBase(QWidget):
@@ -578,59 +632,203 @@ class ShipPanel(PanelBase):
 class LocationPanel(PanelBase):
     def __init__(self, window):
         super().__init__(window, "Location", ORANGE)
+        self._bodies: list[dict] = []
+        self._selected_body: dict | None = None
+        self._bodies_worker: _BodiesWorker | None = None
         self._setup_ui()
 
     def _setup_ui(self):
         c = self.content_layout()
 
-        block = LcarsBlock("Current Location", ORANGE)
-        self.info_label = QLabel()
-        self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet(
-            f"color:{WHITE};font-size:14px;padding:8px;"
-f"background:{DARK2};border-radius:4px;border:1px solid #0e1420;"
-        )
-        block.content_layout().addWidget(self.info_label)
-        c.addWidget(block)
-        c.addStretch()
+        top_row = QHBoxLayout()
+        top_row.setSpacing(12)
+
+        map_block = LcarsBlock("System Map", ORANGE)
+        self.map_widget = SystemMapWidget()
+        self.map_widget.body_clicked.connect(self._on_body_clicked)
+        self.map_widget.setFixedHeight(360)
+        map_block.content_layout().addWidget(self.map_widget)
+        top_row.addWidget(map_block, 3)
+
+        right_col = QVBoxLayout()
+        right_col.setSpacing(8)
+
+        sys_block = LcarsBlock("System Info", ORANGE)
+        sys_inner = QVBoxLayout()
+        sys_inner.setSpacing(2)
+        self._sys_labels: dict[str, QLabel] = {}
+        for key in ("system", "faction", "government", "economy", "security", "allegiance", "population", "station"):
+            lbl = QLabel("")
+            lbl.setWordWrap(True)
+            lbl.setStyleSheet(f"color:{WHITE};font-size:12px;background:transparent;")
+            sys_inner.addWidget(lbl)
+            self._sys_labels[key] = lbl
+        sys_block.content_layout().addLayout(sys_inner)
+        right_col.addWidget(sys_block)
+
+        top_row.addLayout(right_col, 2)
+        c.addLayout(top_row)
+
+        c.addWidget(LcarsBar(ORANGE, 2))
+
+        body_block = LcarsBlock("Body Details", ORANGE)
+        self._body_inner = QVBoxLayout()
+        self._body_inner.setSpacing(2)
+        self._body_labels: dict[str, QLabel] = {}
+        self._body_placeholder = QLabel("Click a body on the map to view details")
+        self._body_placeholder.setStyleSheet(f"color:{GRAY};font-size:12px;background:transparent;")
+        self._body_placeholder.setAlignment(Qt.AlignCenter)
+        self._body_inner.addWidget(self._body_placeholder)
+        body_block.content_layout().addLayout(self._body_inner)
+        c.addWidget(body_block)
+
+    def _on_body_clicked(self, body: dict) -> None:
+        self._selected_body = body if body else None
+        self._update_body_info()
+
+    def _update_body_info(self) -> None:
+        while self._body_inner.count():
+            item = self._body_inner.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+        self._body_labels.clear()
+
+        if not self._selected_body:
+            lbl = QLabel("Click a body on the map to view details")
+            lbl.setStyleSheet(f"color:{GRAY};font-size:12px;background:transparent;")
+            lbl.setAlignment(Qt.AlignCenter)
+            self._body_inner.addWidget(lbl)
+            return
+
+        b = self._selected_body
+        name = b.get("Name", "Unknown")
+        header = QLabel(f"<span style='color:{ORANGE};font-size:14px;font-weight:bold'>{name}</span>")
+        header.setStyleSheet("background:transparent;")
+        self._body_inner.addWidget(header)
+
+        fields = []
+        btype = "Star" if b.get("StarType") else "Planet"
+        fields.append(("Type", btype))
+
+        if b.get("StarType"):
+            fields.append(("Spectral Type", f"{b['StarType']}{b.get('Subclass', '')}"))
+            if b.get("StellarMass"):
+                fields.append(("Mass", f"{b['StellarMass']:.2f} M☉"))
+            if b.get("Radius"):
+                fields.append(("Radius", f"{b['Radius'] / 695700:.1f} R☉"))
+            if b.get("SurfaceTemperature"):
+                fields.append(("Temperature", f"{b['SurfaceTemperature']:.0f} K"))
+            if b.get("DistanceFromArrivalLs") is not None:
+                fields.append(("Distance", f"{b['DistanceFromArrivalLs']:.1f} Ls"))
+        else:
+            if b.get("PlanetClass"):
+                fields.append(("Class", b["PlanetClass"]))
+            if b.get("Atmosphere"):
+                fields.append(("Atmosphere", b["Atmosphere"]))
+            if b.get("Volcanism"):
+                fields.append(("Volcanism", b["Volcanism"]))
+            if b.get("MassEm"):
+                fields.append(("Mass", f"{b['MassEm']:.3f} M⊕"))
+            if b.get("SurfaceGravity"):
+                fields.append(("Gravity", f"{b['SurfaceGravity']:.1f} g"))
+            if b.get("SurfaceTemperature"):
+                fields.append(("Temperature", f"{b['SurfaceTemperature']:.0f} K"))
+            if b.get("DistanceFromArrivalLs") is not None:
+                fields.append(("Distance", f"{b['DistanceFromArrivalLs']:.1f} Ls"))
+            if b.get("OrbitalPeriod"):
+                period_h = b["OrbitalPeriod"] / 3600
+                fields.append(("Orbital Period", f"{period_h:.1f} h"))
+            if b.get("RotationPeriod"):
+                rot_h = abs(b["RotationPeriod"]) / 3600
+                fields.append(("Rotation", f"{rot_h:.1f} h"))
+            if b.get("SemiMajorAxis"):
+                fields.append(("Semi-Major Axis", f"{b['SemiMajorAxis']:.0f} km"))
+            if b.get("Landable") is not None:
+                fields.append(("Landable", "Yes" if b["Landable"] else "No"))
+            if b.get("TerraformState"):
+                fields.append(("Terraform", b["TerraformState"]))
+
+        rings = b.get("Rings") or []
+        if rings:
+            ring_names = ", ".join(r.get("Name", "?").split()[-1] for r in rings[:4])
+            fields.append(("Rings", ring_names))
+
+        mats = b.get("Materials") or []
+        if mats:
+            mat_names = [m.get("Name", "?") for m in mats[:6]]
+            fields.append(("Materials", ", ".join(mat_names)))
+
+        for label, value in fields:
+            row = QHBoxLayout()
+            row.setSpacing(6)
+            lbl_key = QLabel(f"{label}:")
+            lbl_key.setFixedWidth(110)
+            lbl_key.setStyleSheet(f"color:{ORANGE};font-weight:bold;font-size:11px;background:transparent;")
+            row.addWidget(lbl_key)
+            lbl_val = QLabel(str(value))
+            lbl_val.setStyleSheet(f"color:{WHITE};font-size:11px;background:transparent;")
+            row.addWidget(lbl_val)
+            self._body_inner.addLayout(row)
+
+        self._body_inner.addStretch()
 
     def refresh(self) -> None:
         journal = self.window.journal
-        system = journal.get_current_system() or "Unknown"
-        lines = [f"<span style='color:{ORANGE};font-weight:bold'>System:</span>  {system}"]
+        info = journal.get_system_info()
+        self._bodies = journal.get_system_bodies()
+        self.map_widget.set_bodies(self._bodies)
 
-        location = journal.get_latest_event("Location")
-        if location:
-            body = location.get("Body", "N/A")
-            station = location.get("StationName", "N/A")
-            body_type = location.get("BodyType", "")
-            distance = location.get("DistFromStarLs")
-            faction = location.get("SystemFaction", "")
-            if isinstance(faction, dict):
-                faction = faction.get("Name", "")
-            government = location.get("SystemGovernment", "")
-            economy = location.get("SystemEconomy", "")
-            security = location.get("SystemSecurity", "")
-            population = location.get("Population", 0)
+        system = info.get("system", "")
+        if not self._bodies and system:
+            self._bodies_worker = _BodiesWorker(system, self)
+            self._bodies_worker.done.connect(self._on_bodies_from_edsm)
+            self._bodies_worker.start()
 
-            lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Body:</span>  {body}")
-            if body_type:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Body Type:</span>  {body_type}")
-            if distance is not None:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Distance from Star:</span>  {distance:.1f} Ls")
-            lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Station:</span>  {station}")
-            if faction:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Faction:</span>  {faction}")
-            if government:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Government:</span>  {government}")
-            if economy:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Economy:</span>  {economy}")
-            if security:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Security:</span>  {security}")
-            if population:
-                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Population:</span>  {population:,}")
+        self._sys_labels["system"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>System:</span>  "
+            f"<span style='color:{WHITE}'>{info.get('system', 'Unknown')}</span>"
+        )
+        self._sys_labels["faction"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Faction:</span>  "
+            f"<span style='color:{WHITE}'>{info.get('faction', '-')}</span>"
+        )
+        self._sys_labels["government"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Government:</span>  "
+            f"<span style='color:{WHITE}'>{info.get('government', '-')}</span>"
+        )
+        self._sys_labels["economy"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Economy:</span>  "
+            f"<span style='color:{WHITE}'>{info.get('economy', '-')}</span>"
+        )
+        self._sys_labels["security"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Security:</span>  "
+            f"<span style='color:{WHITE}'>{info.get('security', '-')}</span>"
+        )
+        self._sys_labels["allegiance"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Allegiance:</span>  "
+            f"<span style='color:{WHITE}'>{info.get('allegiance', '-')}</span>"
+        )
+        pop = info.get("population", 0)
+        self._sys_labels["population"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Population:</span>  "
+            f"<span style='color:{WHITE}'>{pop:,}</span>"
+        )
+        station = info.get("station", "")
+        self._sys_labels["station"].setText(
+            f"<span style='color:{ORANGE};font-weight:bold'>Station:</span>  "
+            f"<span style='color:{WHITE}'>{station if station else '-'}</span>"
+        )
 
-        self.info_label.setText("<br>".join(lines))
+        self._selected_body = None
+        self._update_body_info()
+
+    def _on_bodies_from_edsm(self, bodies: list) -> None:
+        if bodies:
+            self._bodies = bodies
+            self.map_widget.set_bodies(self._bodies)
+            self.map_widget.update()
 
 
 class MissionsPanel(PanelBase):

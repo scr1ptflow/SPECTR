@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import urllib.request
+import urllib.parse
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -23,8 +24,7 @@ class EDSMClient:
     def _get(self, path: str, params: dict | None = None) -> Optional[dict]:
         url = f"{BASE_URL}{path}"
         if params:
-            query = "&".join(f"{k}={v}" for k, v in params.items() if v is not None)
-            url = f"{url}?{query}"
+            url = f"{url}?{urllib.parse.urlencode(params)}"
 
         if url in self._cache:
             return self._cache[url]

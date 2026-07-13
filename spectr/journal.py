@@ -16,12 +16,21 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Iterator, Optional
 
 from spectr.data.species import base_value as data_base_value
 
 log = logging.getLogger(__name__)
+
+
+def _clean_str(val: str) -> str:
+    """Strip Frontier placeholder prefixes like $government_None; -> None."""
+    if not val:
+        return ""
+    cleaned = re.sub(r"^\$\w+_", "", val).rstrip(";")
+    return cleaned if cleaned and cleaned != "None" else ""
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +278,39 @@ class JournalReader:
         if event:
             return event.get("StarSystem")
         return None
+
+    def get_system_bodies(self) -> list[dict]:
+        """Return bodies from the current system's Location or FSDJump event."""
+        for event_type in ("Location", "FSDJump"):
+            event = self.get_latest_event(event_type)
+            if event:
+                bodies = event.get("Bodies", [])
+                if bodies:
+                    return bodies
+        return []
+
+    def get_system_info(self) -> dict:
+        """Return system-level metadata from Location or FSDJump."""
+        for event_type in ("Location", "FSDJump"):
+            event = self.get_latest_event(event_type)
+            if event:
+                faction = event.get("SystemFaction", "")
+                if isinstance(faction, dict):
+                    faction = faction.get("Name", "")
+                return {
+                    "system": event.get("StarSystem", ""),
+                    "faction": _clean_str(faction),
+                    "government": _clean_str(event.get("SystemGovernment", "")),
+                    "economy": _clean_str(event.get("SystemEconomy", "")),
+                    "security": _clean_str(event.get("SystemSecurity", "")),
+                    "population": event.get("Population", 0),
+                    "allegiance": _clean_str(event.get("SystemAllegiance", "")),
+                    "body": event.get("Body", ""),
+                    "body_type": event.get("BodyType", ""),
+                    "station": event.get("StationName", ""),
+                    "distance_ls": event.get("DistFromStarLs"),
+                }
+        return {}
 
     def get_ship_type(self) -> Optional[str]:
         event = self.get_latest_event("Loadout")

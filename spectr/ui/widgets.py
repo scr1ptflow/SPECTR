@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import (
     QColor, QPainter, QPen, QFont, QLinearGradient,
 )
@@ -386,6 +387,193 @@ class FUIContinuousBar(QWidget):
                 gw = fill_w - g_start
                 if gw > 0:
                     p.fillRect(r.x() + g_start, y, gw, h, QColor(255, 102, 0))
+
+
+_STAR_COLORS: dict[str, str] = {
+    "O": "#9bb0ff", "B": "#aabfff", "A": "#cad7ff",
+    "F": "#f8f7ff", "G": "#fff4ea", "K": "#ffd2a1",
+    "M": "#ffcc6f", "L": "#ff8844", "T": "#ff6633",
+    "Y": "#ff4422", "W": "#99ccff",
+}
+
+_STAR_RADII: dict[str, float] = {
+    "O": 10.0, "B": 7.0, "A": 2.5, "F": 1.4,
+    "G": 1.0, "K": 0.7, "M": 0.3, "L": 0.1, "T": 0.08,
+    "Y": 0.05, "W": 0.02,
+}
+
+
+class SystemMapWidget(QWidget):
+    """Interactive schematic of the current star system."""
+
+    body_clicked = Signal(dict)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._bodies: list[dict] = []
+        self._selected: int | None = None
+        self._body_rects: list[tuple[dict, int, int, int, int]] = []
+        self.setMinimumSize(320, 320)
+        self.setStyleSheet("background:#000000;border:1px solid #0e1420;border-radius:4px;")
+        self.setCursor(Qt.PointingHandCursor)
+
+    def set_bodies(self, bodies: list[dict]) -> None:
+        self._bodies = bodies
+        self._selected = None
+        self._body_rects.clear()
+        self.update()
+
+    def mousePressEvent(self, ev) -> None:
+        mx, my = ev.position().x(), ev.position().y()
+        for body, bx, by, bw, bh in self._body_rects:
+            if bx <= mx <= bx + bw and by <= my <= by + bh:
+                self._selected = body.get("BodyId")
+                self.update()
+                self.body_clicked.emit(body)
+                return
+        self._selected = None
+        self.update()
+        self.body_clicked.emit({})
+
+    def paintEvent(self, event) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = self.rect()
+        p.fillRect(r, QColor(0, 0, 0))
+
+        cx, cy = r.width() // 2, r.height() // 2
+        if not self._bodies:
+            p.setPen(QColor(*_hex_rgb(GRAY)))
+            p.setFont(QFont("monospace", 10))
+            p.drawText(r, Qt.AlignCenter, "No body data available")
+            return
+
+        self._body_rects.clear()
+
+        stars = [b for b in self._bodies if b.get("StarType")]
+        planets = [b for b in self._bodies if not b.get("StarType")]
+
+        star_radius = max(14, min(28, int(self._radius_for_star(stars[0]) * 14))) if stars else 14
+
+        if stars:
+            s = stars[0]
+            stype = s.get("StarType", "G")
+            scol = QColor(_STAR_COLORS.get(stype, "#fff4ea"))
+            glow = QColor(scol)
+            glow.setAlpha(40)
+            p.setBrush(glow)
+            p.setPen(Qt.NoPen)
+            p.drawEllipse(cx - star_radius - 6, cy - star_radius - 6,
+                          (star_radius + 6) * 2, (star_radius + 6) * 2)
+            p.setBrush(scol)
+            p.drawEllipse(cx - star_radius, cy - star_radius,
+                          star_radius * 2, star_radius * 2)
+            self._body_rects.append((s, cx - star_radius, cy - star_radius,
+                                     star_radius * 2, star_radius * 2))
+
+            label = s.get("Name", "Star")
+            p.setPen(QColor(255, 255, 255))
+            p.setFont(QFont("monospace", 7))
+            p.drawText(cx - star_radius, cy + star_radius + 12,
+                       star_radius * 2, 14, Qt.AlignCenter, label)
+
+        max_orbit = max(
+            (b.get("SemiMajorAxis") or b.get("DistanceFromArrivalLs") or 1)
+            for b in planets
+        ) if planets else 1
+
+        min_orbit_r = star_radius + 24
+        max_orbit_r = min(cx, cy) - 30
+        if max_orbit_r < min_orbit_r + 20:
+            max_orbit_r = min_orbit_r + 60
+
+        for b in planets:
+            dist = b.get("SemiMajorAxis") or b.get("DistanceFromArrivalLs") or 0
+            if dist <= 0:
+                dist = max_orbit * 0.5
+            orbit_r = min_orbit_r + (max_orbit_r - min_orbit_r) * (dist / max_orbit) if max_orbit > 0 else min_orbit_r + 40
+
+            p.setPen(QPen(QColor(30, 40, 55), 1, Qt.DashLine))
+            p.setBrush(Qt.NoBrush)
+            p.drawEllipse(cx - int(orbit_r), cy - int(orbit_r),
+                          int(orbit_r) * 2, int(orbit_r) * 2)
+
+            body_radius = self._radius_for_planet(b)
+            angle = (b.get("BodyId", 0) * 2.399) % (2 * math.pi)
+            bx = int(cx + orbit_r * math.cos(angle) - body_radius)
+            by = int(cy + orbit_r * math.sin(angle) - body_radius)
+            bw = body_radius * 2
+            bh = body_radius * 2
+
+            bcolor = QColor(self._planet_color(b))
+            if b.get("BodyId") == self._selected:
+                sel_pen = QPen(QColor(ORANGE), 2)
+                p.setPen(sel_pen)
+                p.setBrush(bcolor)
+                p.drawEllipse(bx - 3, by - 3, bw + 6, bh + 6)
+            else:
+                p.setPen(QPen(QColor(20, 20, 20)))
+                p.setBrush(bcolor)
+                p.drawEllipse(bx, by, bw, bh)
+
+            if b.get("Landable"):
+                p.setPen(QPen(QColor(YELLOW), 1))
+                p.setBrush(Qt.NoBrush)
+                p.drawRect(bx + bw // 2 - 2, by + bh + 2, 4, 4)
+
+            self._body_rects.append((b, bx, by, bw, bh))
+
+            name = b.get("Name", "")
+            short = name.split()[-1] if name else ""
+            if len(short) > 8:
+                short = short[:7] + "."
+            if short:
+                p.setPen(QColor(150, 160, 170))
+                p.setFont(QFont("monospace", 6))
+                p.drawText(bx, by + bh + 8, bw, 10, Qt.AlignCenter, short)
+
+    def _radius_for_star(self, star: dict) -> float:
+        return _STAR_RADII.get(star.get("StarType", "G"), 1.0)
+
+    def _radius_for_planet(self, body: dict) -> int:
+        pclass = (body.get("PlanetClass") or "").lower()
+        mass = body.get("MassEm") or body.get("Mass") or 1.0
+        if "gas giant" in pclass or "jovian" in pclass:
+            return max(6, min(12, int(3 + mass * 1.5)))
+        if "earthlike" in pclass or "water" in pclass:
+            return max(4, min(9, int(2 + mass * 2)))
+        return max(3, min(7, int(2 + mass * 2)))
+
+    def _planet_color(self, body: dict) -> str:
+        pclass = (body.get("PlanetClass") or "").lower()
+        if "earthlike" in pclass:
+            return "#55aaff"
+        if "water world" in pclass or "water" in pclass:
+            return "#3388cc"
+        if "gas giant" in pclass:
+            if "ammonia" in pclass:
+                return "#ccaa33"
+            if "water" in pclass:
+                return "#88aadd"
+            return "#aa8844"
+        if "rocky" in pclass or "rock" in pclass:
+            return "#887766"
+        if "metal" in pclass:
+            return "#999999"
+        if "icy" in pclass:
+            return "#aaccdd"
+        if "snowball" in pclass:
+            return "#ccddff"
+        if "high" in pclass:
+            return "#aa6633"
+        if "volcanic" in pclass or "lava" in pclass:
+            return "#cc3300"
+        return "#665544"
+
+
+def _hex_rgb(hex_color: str) -> tuple[int, int, int]:
+    h = hex_color.lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
 
 LcarsBlock = FUIPanel
