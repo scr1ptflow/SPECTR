@@ -453,36 +453,29 @@ class SystemMapWidget(QWidget):
         stars = [b for b in self._bodies if b.get("StarType")]
         planets = [b for b in self._bodies if not b.get("StarType")]
 
-        star_radius = max(14, min(28, int(self._radius_for_star(stars[0]) * 14))) if stars else 14
-
-        if stars:
-            s = stars[0]
-            stype = s.get("StarType", "G")
-            scol = QColor(_STAR_COLORS.get(stype, "#fff4ea"))
-            glow = QColor(scol)
-            glow.setAlpha(40)
-            p.setBrush(glow)
-            p.setPen(Qt.NoPen)
-            p.drawEllipse(cx - star_radius - 6, cy - star_radius - 6,
-                          (star_radius + 6) * 2, (star_radius + 6) * 2)
-            p.setBrush(scol)
-            p.drawEllipse(cx - star_radius, cy - star_radius,
-                          star_radius * 2, star_radius * 2)
-            self._body_rects.append((s, cx - star_radius, cy - star_radius,
-                                     star_radius * 2, star_radius * 2))
-
-            label = s.get("Name", "Star")
-            p.setPen(QColor(255, 255, 255))
-            p.setFont(QFont("monospace", 7))
-            p.drawText(cx - star_radius, cy + star_radius + 12,
-                       star_radius * 2, 14, Qt.AlignCenter, label)
+        if len(stars) == 1:
+            sx, sy = cx, cy
+            sr = max(14, min(28, int(self._radius_for_star(stars[0]) * 14)))
+            self._draw_star(p, stars[0], sx, sy, sr)
+        elif len(stars) >= 2:
+            orbit_r = min(cx, cy) * 0.45
+            for i, s in enumerate(stars):
+                angle = (i * 2 * math.pi) / len(stars) - math.pi / 2
+                sx = int(cx + orbit_r * math.cos(angle))
+                sy = int(cy + orbit_r * math.sin(angle))
+                sr = max(10, min(20, int(self._radius_for_star(s) * 10)))
+                self._draw_star(p, s, sx, sy, sr)
+        elif stars:
+            sr = max(14, min(28, int(self._radius_for_star(stars[0]) * 14)))
+            self._draw_star(p, stars[0], cx, cy, sr)
 
         max_orbit = max(
             (b.get("SemiMajorAxis") or b.get("DistanceFromArrivalLs") or 1)
             for b in planets
         ) if planets else 1
 
-        min_orbit_r = star_radius + 24
+        base_r = max(14, min(28, int(self._radius_for_star(stars[0]) * 14))) if stars else 14
+        min_orbit_r = base_r + 30 if len(stars) <= 1 else min(cx, cy) * 0.6
         max_orbit_r = min(cx, cy) - 30
         if max_orbit_r < min_orbit_r + 20:
             max_orbit_r = min_orbit_r + 60
@@ -534,6 +527,25 @@ class SystemMapWidget(QWidget):
 
     def _radius_for_star(self, star: dict) -> float:
         return _STAR_RADII.get(star.get("StarType", "G"), 1.0)
+
+    def _draw_star(self, p: QPainter, star: dict, cx: int, cy: int, radius: int) -> None:
+        stype = star.get("StarType", "G")
+        scol = QColor(_STAR_COLORS.get(stype, "#fff4ea"))
+        glow = QColor(scol)
+        glow.setAlpha(40)
+        p.setBrush(glow)
+        p.setPen(Qt.NoPen)
+        p.drawEllipse(cx - radius - 6, cy - radius - 6,
+                      (radius + 6) * 2, (radius + 6) * 2)
+        p.setBrush(scol)
+        p.drawEllipse(cx - radius, cy - radius, radius * 2, radius * 2)
+        self._body_rects.append((star, cx - radius, cy - radius,
+                                 radius * 2, radius * 2))
+        label = star.get("Name", "Star").split()[-1]
+        p.setPen(QColor(255, 255, 255))
+        p.setFont(QFont("monospace", 7))
+        p.drawText(cx - radius, cy + radius + 12,
+                   radius * 2, 14, Qt.AlignCenter, label)
 
     def _radius_for_planet(self, body: dict) -> int:
         pclass = (body.get("PlanetClass") or "").lower()
