@@ -10,8 +10,6 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget,
 )
 
-# FUI (Futuristic User Interface) widgets — thin geometric lines,
-# transparent panels, cyan/orange/white accents, subtle glow.
 CYAN    = "#00d4ff"
 ORANGE  = "#ff6600"
 BLUE    = "#0088ff"
@@ -20,6 +18,7 @@ TEAL    = "#00ccbb"
 YELLOW  = "#ffcc00"
 RED     = "#ff2244"
 PINK    = "#ff4488"
+GREEN   = "#00cc66"
 GRAY    = "#444466"
 GRAY_L  = "#7777aa"
 WHITE   = "#ffffff"
@@ -31,10 +30,6 @@ DARK3   = "#12122a"
 def fui_color(index: int) -> str:
     return [CYAN, ORANGE, BLUE, PURPLE, TEAL, YELLOW, RED][index % 7]
 
-
-# ---------------------------------------------------------------------------
-# FUI accent line — a thin horizontal/vertical strip
-# ---------------------------------------------------------------------------
 
 class FUIBar(QWidget):
     def __init__(self, color: str = CYAN, width: int = 2, parent=None):
@@ -50,15 +45,10 @@ class FUIBar(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        r = self.rect()
         p.setPen(Qt.NoPen)
         p.setBrush(self._color)
-        p.drawRect(r)
+        p.drawRect(self.rect())
 
-
-# ---------------------------------------------------------------------------
-# FUI data panel — transparent dark block with thin border + glow
-# ---------------------------------------------------------------------------
 
 class FUIPanel(QFrame):
     """Data panel with semi-transparent dark background, thin border,
@@ -113,10 +103,6 @@ class FUIPanel(QFrame):
         self.update()
 
 
-# ---------------------------------------------------------------------------
-# FUI tab — minimal text-based sidebar nav
-# ---------------------------------------------------------------------------
-
 class FUITab(QPushButton):
     """Minimal sidebar tab. Active: bright text + left accent bar + glow.
     Inactive: dim text with subtle left border."""
@@ -147,23 +133,19 @@ class FUITab(QPushButton):
         active = self.isChecked()
         hover = self.underMouse()
 
-        # Background — very subtle hover tint
         if hover and not active:
             p.fillRect(r, QColor(0, 212, 255, 12))
 
-        # Left accent bar — thin line for active
         if active:
             p.setPen(Qt.NoPen)
             p.setBrush(self._color)
             p.drawRect(r.x() + 1, r.y() + 6, 3, r.height() - 12)
-            # Bottom glow line
             grad = QLinearGradient(r.x(), r.y(), r.x(), r.bottom())
             grad.setColorAt(0, QColor(self._color).lighter(120))
             grad.setColorAt(1, QColor(self._color))
             p.setPen(QPen(QColor(self._color), 1))
             p.drawLine(r.x() + 6, r.bottom() - 1, r.right() - 6, r.bottom() - 1)
 
-        # Text
         text_color = self._color if active else QColor(100, 100, 140)
         if hover and not active:
             text_color = self._color
@@ -172,10 +154,6 @@ class FUITab(QPushButton):
         text_rect = r.adjusted(16, 0, -8, 0)
         p.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, self.text())
 
-
-# ---------------------------------------------------------------------------
-# FUI action button — thin border, transparent
-# ---------------------------------------------------------------------------
 
 class FUIButton(QPushButton):
     """Futuristic button with thin border, transparent background,
@@ -204,7 +182,6 @@ class FUIButton(QPushButton):
             fill.setAlpha(30 if hover else 50)
             p.fillRect(r, fill)
 
-        # Border
         border_color = self._color
         if not active and not hover:
             border_color = QColor(self._color)
@@ -213,16 +190,11 @@ class FUIButton(QPushButton):
         p.setBrush(Qt.NoBrush)
         p.drawRect(r)
 
-        # Text
         text_color = self._color if (active or hover) else QColor(self._color).darker(140)
         p.setPen(text_color)
         p.setFont(self.font())
         p.drawText(r, Qt.AlignCenter, self.text())
 
-
-# ---------------------------------------------------------------------------
-# FUI top status bar
-# ---------------------------------------------------------------------------
 
 class FUIStatusBar(QWidget):
     """Clean HUD-style top bar with server status and time."""
@@ -305,7 +277,6 @@ class FUIStatusBar(QWidget):
         try:
             game_dt = utc.replace(year=utc.year + 1286)
         except ValueError:
-            # Feb 29 in a leap year → target year is not a leap year
             game_dt = utc.replace(year=utc.year + 1286, day=28)
         self.game_time_label.setText(
             f"GAME  {game_dt.strftime('%Y-%m-%d  %H:%M')}"
@@ -329,10 +300,6 @@ class FUIStatusBar(QWidget):
             f"color:{color};font-size:14px;background:transparent;"
         )
 
-
-# ---------------------------------------------------------------------------
-# FUI progress bar — thin, flat, glowing fill
-# ---------------------------------------------------------------------------
 
 class FUIProgressBar(QWidget):
     """10-segment progress bar with green→yellow→red progression."""
@@ -378,10 +345,6 @@ class FUIProgressBar(QWidget):
             p.fillRect(sx, sy, seg_w, sh, c)
 
 
-# ---------------------------------------------------------------------------
-# FUI continuous bar — single line with position-based coloring
-# ---------------------------------------------------------------------------
-
 class FUIContinuousBar(QWidget):
     """Single continuous bar with red→yellow→green gradient position."""
 
@@ -405,11 +368,9 @@ class FUIContinuousBar(QWidget):
         y = r.y() + 1
         h = r.height() - 2
 
-        # Unfilled portion
         if fill_w < w:
             p.fillRect(r.x() + fill_w, y, w - fill_w, h, QColor(20, 20, 50))
 
-        # Filled portion — crisp sections
         if fill_w > 0:
             r_end = int(w * 0.20)
             g_start = int(w * 0.80)
@@ -427,8 +388,6 @@ class FUIContinuousBar(QWidget):
                     p.fillRect(r.x() + g_start, y, gw, h, QColor(0, 204, 102))
 
 
-# Keep backward-compatible aliases for the old import names
-# so panels.py doesn't need import changes
 LcarsBlock = FUIPanel
 LcarsBar = FUIBar
 LcarsTab = FUITab

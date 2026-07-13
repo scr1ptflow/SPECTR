@@ -10,18 +10,18 @@ from spectr.config import load_config
 from spectr.journal import JournalReader
 from spectr.server_status import ServerStatusChecker
 from spectr.ui.panels import (
-    CommanderPanel, DashboardPanel, LaboratoryPanel, LocationPanel,
-    MissionsPanel, SettingsPanel, ShipPanel,
+    CaptainsLogPanel, CommanderPanel, DashboardPanel, EngineeringPanel,
+    LaboratoryPanel, LocationPanel, MissionsPanel, ScannerPanel,
+    SettingsPanel, ShipPanel,
 )
 from spectr.ui.widgets import (
-    CYAN, ORANGE, BLUE, PURPLE, TEAL, YELLOW, RED, GRAY,
+    CYAN, ORANGE, BLUE, PURPLE, TEAL, YELLOW, RED, PINK, GRAY, GREEN,
     DARK,
     FUITab, FUIStatusBar,
 )
 
 log = logging.getLogger(__name__)
 
-# Server status → text colour
 _STATUS_COLOR = {
     "ONLINE":      "#00d4ff",
     "OFFLINE":     "#ff2244",
@@ -29,25 +29,30 @@ _STATUS_COLOR = {
     "UNKNOWN":     GRAY,
 }
 
-# Each tab: (id, label, accent_colour)
 TAB_ITEMS = [
-    ("dashboard",  "NEWS",       CYAN),
-    ("commander",  "COMMANDER",  ORANGE),
-    ("ship",       "SHIP",       BLUE),
-    ("location",   "LOCATION",   PURPLE),
-    ("missions",   "MISSIONS",   TEAL),
-    ("laboratory", "LABORATORY", YELLOW),
-    ("settings",   "SETTINGS",   GRAY),
+    ("dashboard",    "NEWS",         CYAN),
+    ("commander",    "COMMANDER",    ORANGE),
+    ("ship",         "SHIP",         BLUE),
+    ("location",     "LOCATION",     PURPLE),
+    ("scanner",      "SCANNER",      CYAN),
+    ("missions",     "MISSIONS",     TEAL),
+    ("engineering",  "ENGINEERING",  GREEN),
+    ("captainslog",  "LOG",          PINK),
+    ("laboratory",   "LABORATORY",   YELLOW),
+    ("settings",     "SETTINGS",     GRAY),
 ]
 
 TAB_PANELS = {
-    "dashboard":  DashboardPanel,
-    "commander":  CommanderPanel,
-    "ship":       ShipPanel,
-    "location":   LocationPanel,
-    "missions":   MissionsPanel,
-    "laboratory": LaboratoryPanel,
-    "settings":   SettingsPanel,
+    "dashboard":    DashboardPanel,
+    "commander":    CommanderPanel,
+    "ship":         ShipPanel,
+    "location":     LocationPanel,
+    "scanner":      ScannerPanel,
+    "missions":     MissionsPanel,
+    "engineering":  EngineeringPanel,
+    "captainslog":  CaptainsLogPanel,
+    "laboratory":   LaboratoryPanel,
+    "settings":     SettingsPanel,
 }
 
 _TAB_COLORS = {k: c for k, _, c in TAB_ITEMS}
@@ -81,16 +86,13 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ── Top status bar ─────────────────────────────────────
         self.status_bar = FUIStatusBar(CYAN)
         root.addWidget(self.status_bar)
 
-        # ── Body: sidebar | stack ──────────────────────────────
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(0)
 
-        # ── Sidebar ────────────────────────────────────────────
         sidebar_widget = QWidget()
         sidebar_widget.setStyleSheet(f"background:{DARK};")
         sidebar_widget.setFixedWidth(195)
@@ -98,7 +100,6 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(0, 12, 0, 12)
         sidebar_layout.setSpacing(1)
 
-        # Tab buttons
         self.tab_buttons: list[FUITab] = []
         self._tab_map: dict[str, FUITab] = {}
 
@@ -113,13 +114,11 @@ class MainWindow(QMainWindow):
 
         body.addWidget(sidebar_widget)
 
-        # Right separator line
         sep = QWidget()
         sep.setFixedWidth(1)
         sep.setStyleSheet("background:rgba(0,212,255,30);")
         body.addWidget(sep)
 
-        # ── Content stack ──────────────────────────────────────
         self.stack = QStackedWidget()
         self.stack.setStyleSheet(f"background:{DARK};")
         self.panels: dict[str, QWidget] = {}
@@ -131,7 +130,6 @@ class MainWindow(QMainWindow):
 
         root.addLayout(body, 1)
 
-        # Activate the first tab
         self._switch_tab("dashboard")
 
     def _restore_window_state(self) -> None:

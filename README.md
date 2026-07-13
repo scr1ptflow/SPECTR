@@ -1,6 +1,6 @@
 # SPECTR — Elite Dangerous Desktop Companion
 
-PySide6 desktop GUI for Elite Dangerous commanders with a **Star Trek LCARS**-themed interface. Reads game journals to display commander stats, ship info, location, missions, exobiology data, Galnet news, and live server status.
+PySide6 desktop GUI for Elite Dangerous commanders with a **FUI (Futuristic User Interface)**-themed interface. Reads game journals to display commander stats, ship info, location, missions, exobiology data, Galnet news, and live server status.
 
 ## Quick Start
 
@@ -15,20 +15,27 @@ Creates a virtual environment, installs PySide6, and launches the app. Double-cl
 | Tab | What it shows |
 |-----|---------------|
 | **NEWS** | Galnet articles with day-selector buttons (last 5 days), community goals |
-| **COMMANDER** | Ranks with progress bars, powerplay, credits, rebuy, notoriety |
-| **SHIP** | Ship type/name, shield/fuel/hull health bars, full module loadout |
-| **LOCATION** | Current star system, body, and station |
-| **MISSIONS** | Recent mission history |
-| **LABORATORY** | Exobiology sample tracking with value prediction per species |
-| **SETTINGS** | Journal path, commander name, Inara/EDSM API keys |
+| **COMMANDER** | Ranks with progress bars, powerplay, credits, rebuy, notoriety. Inara API fallback for rank data |
+| **SHIP** | Ship type/name, shield/fuel/hull health bars, full module loadout with engineering grades |
+| **LOCATION** | Current star system, body, station, faction, government, economy, security, population |
+| **SCANNER** | Long Range Scanner — find nearby stations and fleet carriers via EDSM, with landing pad filtering |
+| **MISSIONS** | Active missions vs completed/failed/abandoned outcomes in separate tables |
+| **ENGINEERING** | Materials inventory (Raw/Manufactured/Encoded) with grades; engineer ranks from Inara API |
+| **LOG** | Event log from journal — travel, combat, trade, exploration, ship events with filters |
+| **LABORATORY** | Exobiology sample tracking with predicted CR value per species (86 species database) |
+| **SETTINGS** | Journal path, commander name, Inara/EDSM API keys, journal validation |
 
-### LCARS Interface
+### FUI Interface
 - Custom-painted side tab navigation with per-tab accent colours
 - Data frames with coloured left accent rails
-- Colour-thresholded health bars (green ≥ 65%, yellow ≥ 30%, red < 30%)
+- Colour-thresholded 10-segment health bars (green >= 80%, yellow 20-80%, red < 20%)
 - Status bar with live server status indicator (ONLINE/OFFLINE/MAINTENANCE)
 - Game time (UTC +1286 years = Elite Dangerous timeline) / local system clock — click to toggle
-- All widgets painted via `QPainter` — no images, pure vector LCARS styling
+- All widgets painted via `QPainter` — no images, pure vector FUI styling
+- Window size and position persisted between sessions
+
+### Async Networking
+Network fetches (Galnet, Long Range Scanner, Engineers) run in background `QThread` workers — the UI stays responsive during network requests.
 
 ### Live Server Status
 Async checks every 3 minutes against `auth.frontierstore.net` and `elite.frontier.co.uk`. Status colour-coded in the top bar.
@@ -40,6 +47,9 @@ Settings are stored at `~/.config/spectr/config.json` or configure via the **SET
 - **Journal Path** — `~/Saved Games/Frontier Developments/Elite Dangerous`
 - **Commander Name** — Your CMDR name
 - **Inara API Key** — Optional, enables rank fallback data
+- **EDSM API Key** — Reserved for future integration
+
+The settings panel validates your journal path on save and warns if no journal files are found.
 
 ## Requirements
 
