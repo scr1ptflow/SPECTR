@@ -646,9 +646,9 @@ class LocationPanel(PanelBase):
         map_block = LcarsBlock("System Map", ORANGE)
         self.map_widget = SystemMapWidget()
         self.map_widget.body_clicked.connect(self._on_body_clicked)
-        self.map_widget.setMinimumHeight(450)
+        self.map_widget.setMinimumHeight(360)
         map_block.content_layout().addWidget(self.map_widget)
-        top_row.addWidget(map_block, 4)
+        top_row.addWidget(map_block, 3)
 
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
