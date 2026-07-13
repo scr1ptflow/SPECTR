@@ -672,7 +672,6 @@ class LocationPanel(PanelBase):
         c.addWidget(LcarsBar(ORANGE, 2))
 
         body_block = LcarsBlock("Body Details", ORANGE)
-        body_block.setMaximumHeight(180)
         self._body_inner = QVBoxLayout()
         self._body_inner.setSpacing(2)
         self._body_labels: dict[str, QLabel] = {}
