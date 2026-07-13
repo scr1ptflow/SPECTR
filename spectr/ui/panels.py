@@ -646,9 +646,9 @@ class LocationPanel(PanelBase):
         map_block = LcarsBlock("System Map", ORANGE)
         self.map_widget = SystemMapWidget()
         self.map_widget.body_clicked.connect(self._on_body_clicked)
-        self.map_widget.setFixedHeight(360)
+        self.map_widget.setMinimumHeight(450)
         map_block.content_layout().addWidget(self.map_widget)
-        top_row.addWidget(map_block, 3)
+        top_row.addWidget(map_block, 4)
 
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
@@ -666,12 +666,13 @@ class LocationPanel(PanelBase):
         sys_block.content_layout().addLayout(sys_inner)
         right_col.addWidget(sys_block)
 
-        top_row.addLayout(right_col, 2)
-        c.addLayout(top_row)
+        top_row.addLayout(right_col, 1)
+        c.addLayout(top_row, 1)
 
         c.addWidget(LcarsBar(ORANGE, 2))
 
         body_block = LcarsBlock("Body Details", ORANGE)
+        body_block.setMaximumHeight(180)
         self._body_inner = QVBoxLayout()
         self._body_inner.setSpacing(2)
         self._body_labels: dict[str, QLabel] = {}

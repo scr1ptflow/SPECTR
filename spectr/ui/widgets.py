@@ -413,7 +413,7 @@ class SystemMapWidget(QWidget):
         self._bodies: list[dict] = []
         self._selected: int | None = None
         self._body_rects: list[tuple[dict, int, int, int, int]] = []
-        self.setMinimumSize(320, 320)
+        self.setMinimumSize(400, 400)
         self.setStyleSheet("background:#000000;border:1px solid #0e1420;border-radius:4px;")
         self.setCursor(Qt.PointingHandCursor)
 
