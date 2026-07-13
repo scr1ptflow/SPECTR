@@ -28,11 +28,11 @@ log = logging.getLogger(__name__)
 def _table_style(color: str) -> str:
     """Return a QTableWidget stylesheet for the given accent colour."""
     return (
-        f"QTableWidget{{background:{DARK2};border:1px solid #222;border-radius:4px;"
-        f"color:{WHITE};gridline-color:#222;}}"
+        f"QTableWidget{{background:{DARK2};border:1px solid #0e1420;border-radius:4px;"
+        f"color:{WHITE};gridline-color:#0e1420;}}"
         f"QHeaderView::section{{background:{DARK3};color:{color};font-weight:bold;"
-        f"border:1px solid #222;padding:4px;}}"
-        f"QTableWidget::item{{padding:3px 6px;border-bottom:1px solid #1a1a1a;}}"
+        f"border:1px solid #0e1420;padding:4px;}}"
+        f"QTableWidget::item{{padding:3px 6px;border-bottom:1px solid #151a28;}}"
     )
 
 
@@ -88,7 +88,7 @@ class PanelBase(QWidget):
         scroll.setStyleSheet(
             "QScrollArea{background:transparent;border:none;}"
             "QScrollBar:vertical{background:transparent;width:6px;border:none;}"
-            "QScrollBar::handle:vertical{background:#222244;min-height:30px;}"
+            "QScrollBar::handle:vertical{background:#101828;min-height:30px;}"
             "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{height:0;}"
         )
         outer.addWidget(scroll, 1)
@@ -122,8 +122,8 @@ class DashboardPanel(PanelBase):
         self.article_view = QTextBrowser()
         self.article_view.setOpenExternalLinks(True)
         self.article_view.setStyleSheet(
-            f"background:{DARK2};border:1px solid #222;border-radius:4px;"
-            f"padding:8px;color:{WHITE};"
+            f"background:{DARK2};border:1px solid #0e1420;border-radius:4px;"
+            f"padding:8px;color:{WHITE};font-size:14px;"
         )
         block.content_layout().addWidget(self.article_view)
         c.addWidget(block, 1)
@@ -134,7 +134,7 @@ class DashboardPanel(PanelBase):
         self.date_row_layout = date_row
         c.addLayout(date_row)
 
-        cg_block = LcarsBlock("Community Goals", YELLOW)
+        cg_block = LcarsBlock("Community Goals", ORANGE)
         self.cg_content = QLabel("Loading...")
         self.cg_content.setStyleSheet(f"color:{GRAY};padding:4px;background:transparent;")
         self.cg_content.setAlignment(Qt.AlignTop)
@@ -237,7 +237,7 @@ class DashboardPanel(PanelBase):
 
 class CommanderPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Commander", BLUE)
+        super().__init__(window, "Commander", ORANGE)
         self._rank_names: dict[str, QLabel] = {}
         self._rank_bars: dict[str, HealthBar] = {}
         self._finance_labels: dict[str, QLabel] = {}
@@ -246,13 +246,13 @@ class CommanderPanel(PanelBase):
     def _setup_ui(self):
         c = self.content_layout()
 
-        id_block = LcarsBlock("", BLUE)
+        id_block = LcarsBlock("", ORANGE)
         self.cmdr_label = QLabel()
         self.cmdr_label.setStyleSheet(f"color:{WHITE};font-size:16px;font-weight:bold;background:transparent;")
         id_block.content_layout().addWidget(self.cmdr_label)
         c.addWidget(id_block)
 
-        c.addWidget(LcarsBar(BLUE, 2))
+        c.addWidget(LcarsBar(ORANGE, 2))
 
         categories = [
             "Combat", "Trade", "Explore", "CQC",
@@ -279,14 +279,14 @@ class CommanderPanel(PanelBase):
 
             grid.addWidget(block, row, col)
 
-        c.addWidget(LcarsBar(BLUE, 2))
+        c.addWidget(LcarsBar(ORANGE, 2))
         self.pp_block = LcarsBlock("Powerplay", PINK)
         self.pp_inner = QVBoxLayout()
         self.pp_inner.setSpacing(2)
         self.pp_block.content_layout().addLayout(self.pp_inner)
         c.addWidget(self.pp_block)
 
-        c.addWidget(LcarsBar(BLUE, 2))
+        c.addWidget(LcarsBar(ORANGE, 2))
         fin_block = LcarsBlock("Finances", TEAL)
         fin_inner = QVBoxLayout()
         fin_inner.setSpacing(4)
@@ -294,7 +294,7 @@ class CommanderPanel(PanelBase):
 
         _FINANCE_COLORS = {
             "credits":  YELLOW,
-            "arx":      "#ff6600",
+            "arx":      ORANGE,
             "rebuy":    RED,
             "notoriety": WHITE,
         }
@@ -324,7 +324,7 @@ class CommanderPanel(PanelBase):
 
         cmdr = journal.get_commander() or config.get("commander_name") or "Unknown"
         squadron = journal.get_squadron()
-        text = f"<span style='color:{BLUE}'>{cmdr}</span>"
+        text = f"<span style='color:{ORANGE}'>{cmdr}</span>"
         if squadron:
             text += f"  <span style='color:{GRAY}'>— {squadron}</span>"
         self.cmdr_label.setText(text)
@@ -395,28 +395,28 @@ class CommanderPanel(PanelBase):
 
 class ShipPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Ship", PURPLE)
+        super().__init__(window, "Ship", ORANGE)
         self._module_cells: list[QWidget] = []
         self._setup_ui()
 
     def _setup_ui(self):
         c = self.content_layout()
 
-        id_block = LcarsBlock("", PURPLE)
+        id_block = LcarsBlock("", ORANGE)
         self.ship_name_label = QLabel()
         self.ship_name_label.setAlignment(Qt.AlignCenter)
         self.ship_name_label.setStyleSheet(f"color:{WHITE};font-size:16px;font-weight:bold;background:transparent;")
         id_block.content_layout().addWidget(self.ship_name_label)
         c.addWidget(id_block)
 
-        c.addWidget(LcarsBar(PURPLE, 2))
+        c.addWidget(LcarsBar(ORANGE, 2))
         stats_row = QHBoxLayout()
         stats_row.setSpacing(12)
 
-        self.shield_stat = self._make_stat_box("Shield Generator", PURPLE)
+        self.shield_stat = self._make_stat_box("Shield Generator", ORANGE)
         stats_row.addWidget(self.shield_stat)
 
-        self.fuel_stat = LcarsBlock("Fuel Tank", PURPLE)
+        self.fuel_stat = LcarsBlock("Fuel Tank", ORANGE)
         fuel_integrity_bar = HealthBar()
         fuel_integrity_bar.setObjectName("stat-bar-fuel")
         fuel_integrity_bar.setFixedHeight(18)
@@ -427,13 +427,13 @@ class ShipPanel(PanelBase):
         self.fuel_stat.content_layout().addWidget(self._fuel_numbers)
         stats_row.addWidget(self.fuel_stat)
 
-        self.hull_stat = self._make_stat_box("Hull Integrity", PURPLE)
+        self.hull_stat = self._make_stat_box("Hull Integrity", ORANGE)
         stats_row.addWidget(self.hull_stat)
 
         c.addLayout(stats_row)
 
-        c.addWidget(LcarsBar(PURPLE, 4))
-        self._module_block = LcarsBlock("", PURPLE)
+        c.addWidget(LcarsBar(ORANGE, 4))
+        self._module_block = LcarsBlock("", ORANGE)
         self._module_grid = QGridLayout()
         self._module_grid.setSpacing(6)
         self._module_block.content_layout().addLayout(self._module_grid)
@@ -458,7 +458,7 @@ class ShipPanel(PanelBase):
 
         parts = []
         if ship_name:
-            parts.append(f"<span style='color:{PURPLE}'><b>{ship_name}</b></span>")
+            parts.append(f"<span style='color:{ORANGE}'><b>{ship_name}</b></span>")
         if ship_ident:
             parts.append(f"<span style='color:{GRAY_L}'><i>{ship_ident}</i></span>")
         if not parts:
@@ -541,7 +541,7 @@ class ShipPanel(PanelBase):
                     eng_text += f" {eng_name}"
 
             cell = QWidget()
-            cell.setStyleSheet(f"background:{DARK2};border-radius:4px;border:1px solid #222;")
+            cell.setStyleSheet(f"background:{DARK2};border-radius:4px;border:1px solid #0e1420;")
             row = QHBoxLayout(cell)
             row.setContentsMargins(8, 2, 8, 2)
             row.setSpacing(6)
@@ -577,18 +577,18 @@ class ShipPanel(PanelBase):
 
 class LocationPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Location", TEAL)
+        super().__init__(window, "Location", ORANGE)
         self._setup_ui()
 
     def _setup_ui(self):
         c = self.content_layout()
 
-        block = LcarsBlock("Current Location", TEAL)
+        block = LcarsBlock("Current Location", ORANGE)
         self.info_label = QLabel()
         self.info_label.setWordWrap(True)
         self.info_label.setStyleSheet(
             f"color:{WHITE};font-size:14px;padding:8px;"
-            f"background:{DARK2};border-radius:4px;border:1px solid #222;"
+f"background:{DARK2};border-radius:4px;border:1px solid #0e1420;"
         )
         block.content_layout().addWidget(self.info_label)
         c.addWidget(block)
@@ -597,7 +597,7 @@ class LocationPanel(PanelBase):
     def refresh(self) -> None:
         journal = self.window.journal
         system = journal.get_current_system() or "Unknown"
-        lines = [f"<span style='color:{TEAL};font-weight:bold'>System:</span>  {system}"]
+        lines = [f"<span style='color:{ORANGE};font-weight:bold'>System:</span>  {system}"]
 
         location = journal.get_latest_event("Location")
         if location:
@@ -613,35 +613,35 @@ class LocationPanel(PanelBase):
             security = location.get("SystemSecurity", "")
             population = location.get("Population", 0)
 
-            lines.append(f"<span style='color:{TEAL};font-weight:bold'>Body:</span>  {body}")
+            lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Body:</span>  {body}")
             if body_type:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Body Type:</span>  {body_type}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Body Type:</span>  {body_type}")
             if distance is not None:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Distance from Star:</span>  {distance:.1f} Ls")
-            lines.append(f"<span style='color:{TEAL};font-weight:bold'>Station:</span>  {station}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Distance from Star:</span>  {distance:.1f} Ls")
+            lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Station:</span>  {station}")
             if faction:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Faction:</span>  {faction}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Faction:</span>  {faction}")
             if government:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Government:</span>  {government}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Government:</span>  {government}")
             if economy:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Economy:</span>  {economy}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Economy:</span>  {economy}")
             if security:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Security:</span>  {security}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Security:</span>  {security}")
             if population:
-                lines.append(f"<span style='color:{TEAL};font-weight:bold'>Population:</span>  {population:,}")
+                lines.append(f"<span style='color:{ORANGE};font-weight:bold'>Population:</span>  {population:,}")
 
         self.info_label.setText("<br>".join(lines))
 
 
 class MissionsPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Missions", YELLOW)
+        super().__init__(window, "Missions", ORANGE)
         self._setup_ui()
 
     def _setup_ui(self):
         c = self.content_layout()
 
-        active_block = LcarsBlock("Active Missions", YELLOW)
+        active_block = LcarsBlock("Active Missions", ORANGE)
         self.active_table = QTableWidget()
         self.active_table.setColumnCount(4)
         self.active_table.setHorizontalHeaderLabels(["Timestamp", "Mission", "Destination", "Expires"])
@@ -649,11 +649,11 @@ class MissionsPanel(PanelBase):
         self.active_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.active_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.active_table.setSelectionMode(QTableWidget.NoSelection)
-        self._style_table(self.active_table, YELLOW)
+        self._style_table(self.active_table, ORANGE)
         active_block.content_layout().addWidget(self.active_table)
         c.addWidget(active_block, 1)
 
-        c.addWidget(LcarsBar(YELLOW, 2))
+        c.addWidget(LcarsBar(ORANGE, 2))
         completed_block = LcarsBlock("Completed / Failed", GRAY)
         self.completed_table = QTableWidget()
         self.completed_table.setColumnCount(4)
@@ -718,7 +718,7 @@ class MissionsPanel(PanelBase):
 
 class LaboratoryPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Laboratory", RED)
+        super().__init__(window, "Laboratory", ORANGE)
         self._setup_ui()
 
     def _setup_ui(self):
@@ -728,13 +728,13 @@ class LaboratoryPanel(PanelBase):
         summary_row.setSpacing(12)
         c.addLayout(summary_row)
 
-        self.count_stat = self._make_summary_block("Sellable Samples", RED)
+        self.count_stat = self._make_summary_block("Sellable Samples", ORANGE)
         summary_row.addWidget(self.count_stat)
-        self.value_stat = self._make_summary_block("Predicted Value", RED)
+        self.value_stat = self._make_summary_block("Predicted Value", ORANGE)
         summary_row.addWidget(self.value_stat)
 
-        c.addWidget(LcarsBar(RED, 2))
-        block = LcarsBlock("Pending Organic Data", RED)
+        c.addWidget(LcarsBar(ORANGE, 2))
+        block = LcarsBlock("Pending Organic Data", ORANGE)
         self.detail_table = QTableWidget()
         self.detail_table.setColumnCount(6)
         self.detail_table.setHorizontalHeaderLabels(["System", "Body", "Species", "Sets", "Value", "First Footfall"])
@@ -743,7 +743,7 @@ class LaboratoryPanel(PanelBase):
         self.detail_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.detail_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.detail_table.setSelectionMode(QTableWidget.NoSelection)
-        self.detail_table.setStyleSheet(_table_style(RED))
+        self.detail_table.setStyleSheet(_table_style(ORANGE))
         block.content_layout().addWidget(self.detail_table)
         c.addWidget(block, 1)
 
@@ -778,13 +778,13 @@ class LaboratoryPanel(PanelBase):
 
 class SettingsPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Settings", GRAY)
+        super().__init__(window, "Settings", ORANGE)
         self._setup_ui()
 
     def _setup_ui(self):
         c = self.content_layout()
 
-        block = LcarsBlock("Configuration", GRAY)
+        block = LcarsBlock("Configuration", ORANGE)
         form = QVBoxLayout()
         form.setSpacing(4)
 
@@ -806,7 +806,7 @@ class SettingsPanel(PanelBase):
             inp.setPlaceholderText(placeholder)
             inp.setObjectName(f"input-{key}")
             inp.setStyleSheet(
-                f"QLineEdit{{padding:6px 8px;border:1px solid #333;border-radius:4px;"
+                f"QLineEdit{{padding:6px 8px;border:1px solid #0e1420;border-radius:4px;"
                 f"background:{DARK2};color:{WHITE};}}"
                 f"QLineEdit:focus{{border-color:{ORANGE};}}"
             )
@@ -821,7 +821,7 @@ class SettingsPanel(PanelBase):
 
         self.status_label = QLabel()
         self.status_label.setObjectName("settings-status")
-        self.status_label.setStyleSheet(f"color:#00cc66;padding:4px 0;background:transparent;")
+        self.status_label.setStyleSheet(f"color:{GREEN};padding:4px 0;background:transparent;")
         block.content_layout().addWidget(self.status_label)
 
         c.addWidget(block)
@@ -842,10 +842,10 @@ class SettingsPanel(PanelBase):
 
         warnings = validate_config(new_config)
         if warnings:
-            self.status_label.setStyleSheet(f"color:#ffcc00;padding:4px 0;background:transparent;")
+            self.status_label.setStyleSheet(f"color:{YELLOW};padding:4px 0;background:transparent;")
             self.status_label.setText("Saved with warnings: " + "; ".join(warnings))
         else:
-            self.status_label.setStyleSheet(f"color:#00cc66;padding:4px 0;background:transparent;")
+            self.status_label.setStyleSheet(f"color:{GREEN};padding:4px 0;background:transparent;")
             self.status_label.setText("Settings saved successfully.")
 
         save_config(new_config)
@@ -947,7 +947,7 @@ class _EngineerWorker(QThread):
 
 class ScannerPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Scanner", CYAN)
+        super().__init__(window, "Scanner", ORANGE)
         self._worker: _ScannerWorker | None = None
         self._results: list[dict] = []
         self._mode = "all"
@@ -957,7 +957,7 @@ class ScannerPanel(PanelBase):
     def _setup_ui(self):
         c = self.content_layout()
 
-        ctrl_block = LcarsBlock("Scan Parameters", CYAN)
+        ctrl_block = LcarsBlock("Scan Parameters", ORANGE)
         ctrl_inner = QVBoxLayout()
         ctrl_inner.setSpacing(4)
 
@@ -968,7 +968,7 @@ class ScannerPanel(PanelBase):
         radius_row = QHBoxLayout()
         radius_row.setSpacing(8)
         radius_lbl = QLabel("Radius:")
-        radius_lbl.setStyleSheet(f"color:{CYAN};font-weight:bold;background:transparent;")
+        radius_lbl.setStyleSheet(f"color:{ORANGE};font-weight:bold;background:transparent;")
         radius_row.addWidget(radius_lbl)
         self.radius_btns: list[QPushButton] = []
         for r in [25, 50, 100]:
@@ -983,7 +983,7 @@ class ScannerPanel(PanelBase):
         mode_row = QHBoxLayout()
         mode_row.setSpacing(8)
         mode_lbl = QLabel("Filter:")
-        mode_lbl.setStyleSheet(f"color:{CYAN};font-weight:bold;background:transparent;")
+        mode_lbl.setStyleSheet(f"color:{ORANGE};font-weight:bold;background:transparent;")
         mode_row.addWidget(mode_lbl)
         self.mode_btns: list[QPushButton] = []
         for mode_id, label in [("all", "All"), ("stations", "Stations"), ("carriers", "Carriers")]:
@@ -996,7 +996,7 @@ class ScannerPanel(PanelBase):
         ctrl_inner.addLayout(mode_row)
 
         scan_row = QHBoxLayout()
-        self.scan_btn = LcarsPill("SCAN", CYAN)
+        self.scan_btn = LcarsPill("SCAN", ORANGE)
         self.scan_btn.clicked.connect(self._start_scan)
         scan_row.addWidget(self.scan_btn)
         scan_row.addStretch()
@@ -1009,8 +1009,8 @@ class ScannerPanel(PanelBase):
         ctrl_block.content_layout().addLayout(ctrl_inner)
         c.addWidget(ctrl_block)
 
-        c.addWidget(LcarsBar(CYAN, 2))
-        results_block = LcarsBlock("Nearby Stations & Carriers", CYAN)
+        c.addWidget(LcarsBar(ORANGE, 2))
+        results_block = LcarsBlock("Nearby Stations & Carriers", ORANGE)
         self.results_table = QTableWidget()
         self.results_table.setColumnCount(7)
         self.results_table.setHorizontalHeaderLabels(
@@ -1021,7 +1021,7 @@ class ScannerPanel(PanelBase):
         self.results_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.results_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
         self.results_table.setSelectionMode(QTableWidget.NoSelection)
-        self.results_table.setStyleSheet(_table_style(CYAN))
+        self.results_table.setStyleSheet(_table_style(ORANGE))
         results_block.content_layout().addWidget(self.results_table)
         c.addWidget(results_block, 1)
 
@@ -1034,7 +1034,7 @@ class ScannerPanel(PanelBase):
         system = journal.get_current_system() or "Unknown"
 
         self.ship_info.setText(
-            f"<span style='color:{CYAN}'>{ship_type}</span>  |  "
+            f"<span style='color:{ORANGE}'>{ship_type}</span>  |  "
             f"Pad: <span style='color:{YELLOW}'>{pad_label}</span>  |  "
             f"System: <span style='color:{WHITE}'>{system}</span>"
         )
@@ -1042,23 +1042,23 @@ class ScannerPanel(PanelBase):
         for btn in self.radius_btns:
             r = btn.property("radius")
             active = r == 50
-            bg = CYAN if active else "transparent"
-            fg = DARK if active else CYAN
+            bg = ORANGE if active else "transparent"
+            fg = DARK if active else ORANGE
             btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {CYAN};"
+                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
                 f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
-                f"QPushButton:hover{{background:{CYAN};color:{DARK};}}"
+                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
         for btn in self.mode_btns:
             m = btn.property("mode")
             active = m == self._mode
-            bg = CYAN if active else "transparent"
-            fg = DARK if active else CYAN
+            bg = ORANGE if active else "transparent"
+            fg = DARK if active else ORANGE
             btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {CYAN};"
+                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
                 f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
-                f"QPushButton:hover{{background:{CYAN};color:{DARK};}}"
+                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
     def _on_radius_click(self):
@@ -1069,12 +1069,12 @@ class ScannerPanel(PanelBase):
         for b in self.radius_btns:
             br = b.property("radius")
             active = br == self._selected_radius
-            bg = CYAN if active else "transparent"
-            fg = DARK if active else CYAN
+            bg = ORANGE if active else "transparent"
+            fg = DARK if active else ORANGE
             b.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {CYAN};"
+                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
                 f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
-                f"QPushButton:hover{{background:{CYAN};color:{DARK};}}"
+                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
     def _on_mode_click(self):
@@ -1085,12 +1085,12 @@ class ScannerPanel(PanelBase):
         for b in self.mode_btns:
             m = b.property("mode")
             active = m == self._mode
-            bg = CYAN if active else "transparent"
-            fg = DARK if active else CYAN
+            bg = ORANGE if active else "transparent"
+            fg = DARK if active else ORANGE
             b.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {CYAN};"
+                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
                 f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
-                f"QPushButton:hover{{background:{CYAN};color:{DARK};}}"
+                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
     def _start_scan(self):
@@ -1132,7 +1132,7 @@ class ScannerPanel(PanelBase):
 
 class CaptainsLogPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Captain's Log", PINK)
+        super().__init__(window, "Captain's Log", ORANGE)
         self._events: list[dict] = []
         self._filter = "all"
         self._setup_ui()
@@ -1140,7 +1140,7 @@ class CaptainsLogPanel(PanelBase):
     def _setup_ui(self):
         c = self.content_layout()
 
-        ctrl_block = LcarsBlock("Log Controls", PINK)
+        ctrl_block = LcarsBlock("Log Controls", ORANGE)
         ctrl_inner = QHBoxLayout()
         ctrl_inner.setSpacing(8)
 
@@ -1162,19 +1162,19 @@ class CaptainsLogPanel(PanelBase):
 
         ctrl_inner.addStretch()
 
-        refresh_btn = LcarsPill("REFRESH", PINK)
+        refresh_btn = LcarsPill("REFRESH", ORANGE)
         refresh_btn.clicked.connect(self.refresh)
         ctrl_inner.addWidget(refresh_btn)
 
         ctrl_block.content_layout().addLayout(ctrl_inner)
         c.addWidget(ctrl_block)
 
-        c.addWidget(LcarsBar(PINK, 2))
-        log_block = LcarsBlock("Mission Log", PINK)
+        c.addWidget(LcarsBar(ORANGE, 2))
+        log_block = LcarsBlock("Mission Log", ORANGE)
         self.log_view = QTextBrowser()
         self.log_view.setOpenExternalLinks(False)
         self.log_view.setStyleSheet(
-            f"background:{DARK2};border:1px solid #222;border-radius:4px;"
+            f"background:{DARK2};border:1px solid #0e1420;border-radius:4px;"
             f"padding:8px;color:{WHITE};"
         )
         log_block.content_layout().addWidget(self.log_view)
@@ -1456,18 +1456,18 @@ class CaptainsLogPanel(PanelBase):
         for btn in self.filter_btns:
             f = btn.property("filter")
             active = f == self._filter
-            bg = PINK if active else "transparent"
-            fg = DARK if active else PINK
+            bg = ORANGE if active else "transparent"
+            fg = DARK if active else ORANGE
             btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {PINK};"
+                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
                 f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
-                f"QPushButton:hover{{background:{PINK};color:{DARK};}}"
+                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
 
 class EngineeringPanel(PanelBase):
     def __init__(self, window):
-        super().__init__(window, "Engineering", GREEN)
+        super().__init__(window, "Engineering", ORANGE)
         self._engineer_data: dict = {}
         self._worker: _EngineerWorker | None = None
         self._setup_ui()
@@ -1478,7 +1478,7 @@ class EngineeringPanel(PanelBase):
         mats_row = QHBoxLayout()
         mats_row.setSpacing(10)
 
-        raw_block = LcarsBlock("Raw", YELLOW)
+        raw_block = LcarsBlock("Raw", ORANGE)
         self.raw_table = QTableWidget()
         self.raw_table.setColumnCount(3)
         self.raw_table.setHorizontalHeaderLabels(["Material", "Count", "Max"])
@@ -1487,7 +1487,7 @@ class EngineeringPanel(PanelBase):
         self.raw_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.raw_table.setSelectionMode(QTableWidget.NoSelection)
         self.raw_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.raw_table.setStyleSheet(_table_style(YELLOW))
+        self.raw_table.setStyleSheet(_table_style(ORANGE))
         raw_block.content_layout().addWidget(self.raw_table)
         mats_row.addWidget(raw_block, 1)
 
@@ -1505,7 +1505,7 @@ class EngineeringPanel(PanelBase):
         mfg_block.content_layout().addWidget(self.mfg_table)
         mats_row.addWidget(mfg_block, 1)
 
-        enc_block = LcarsBlock("Encoded", CYAN)
+        enc_block = LcarsBlock("Encoded", ORANGE)
         self.enc_table = QTableWidget()
         self.enc_table.setColumnCount(4)
         self.enc_table.setHorizontalHeaderLabels(["Material", "Grade", "Count", "Max"])
@@ -1515,14 +1515,14 @@ class EngineeringPanel(PanelBase):
         self.enc_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.enc_table.setSelectionMode(QTableWidget.NoSelection)
         self.enc_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.enc_table.setStyleSheet(_table_style(CYAN))
+        self.enc_table.setStyleSheet(_table_style(ORANGE))
         enc_block.content_layout().addWidget(self.enc_table)
         mats_row.addWidget(enc_block, 1)
 
         c.addLayout(mats_row, 1)
 
-        c.addWidget(LcarsBar(GREEN, 2))
-        eng_block = LcarsBlock("Engineers", GREEN)
+        c.addWidget(LcarsBar(ORANGE, 2))
+        eng_block = LcarsBlock("Engineers", ORANGE)
 
         self.eng_status = QLabel("Loading engineer data...")
         self.eng_status.setStyleSheet(f"color:{GRAY};background:transparent;")
@@ -1537,7 +1537,7 @@ class EngineeringPanel(PanelBase):
         self.eng_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.eng_table.setSelectionMode(QTableWidget.NoSelection)
         self.eng_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.eng_table.setStyleSheet(_table_style(GREEN))
+        self.eng_table.setStyleSheet(_table_style(ORANGE))
         eng_block.content_layout().addWidget(self.eng_table)
         c.addWidget(eng_block, 1)
 

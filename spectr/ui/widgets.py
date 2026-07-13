@@ -10,21 +10,21 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget,
 )
 
-CYAN    = "#00d4ff"
+CYAN    = "#00ccdd"
 ORANGE  = "#ff6600"
-BLUE    = "#0088ff"
-PURPLE  = "#8833ff"
-TEAL    = "#00ccbb"
-YELLOW  = "#ffcc00"
-RED     = "#ff2244"
-PINK    = "#ff4488"
-GREEN   = "#00cc66"
-GRAY    = "#444466"
-GRAY_L  = "#7777aa"
-WHITE   = "#ffffff"
-DARK    = "#080810"
-DARK2   = "#0c0c1a"
-DARK3   = "#12122a"
+BLUE    = "#4488cc"
+PURPLE  = "#8855cc"
+TEAL    = "#22aa99"
+YELLOW  = "#ffbb33"
+RED     = "#dd3344"
+PINK    = "#cc5577"
+GREEN   = "#33bb66"
+GRAY    = "#445566"
+GRAY_L  = "#667788"
+WHITE   = "#dde0e8"
+DARK    = "#000000"
+DARK2   = "#080808"
+DARK3   = "#101010"
 
 
 def fui_color(index: int) -> str:
@@ -61,8 +61,8 @@ class FUIPanel(QFrame):
         self._border_color.setAlpha(60)
 
         self.setStyleSheet(
-            f"background:rgba(8,8,16,180);"
-            f"border:1px solid rgba(0,212,255,40);"
+            f"background:rgba(0,0,0,180);"
+            f"border:1px solid rgba(255,102,0,40);"
         )
 
         outer = QVBoxLayout(self)
@@ -134,7 +134,7 @@ class FUITab(QPushButton):
         hover = self.underMouse()
 
         if hover and not active:
-            p.fillRect(r, QColor(0, 212, 255, 12))
+            p.fillRect(r, QColor(255, 102, 0, 12))
 
         if active:
             p.setPen(Qt.NoPen)
@@ -146,7 +146,7 @@ class FUITab(QPushButton):
             p.setPen(QPen(QColor(self._color), 1))
             p.drawLine(r.x() + 6, r.bottom() - 1, r.right() - 6, r.bottom() - 1)
 
-        text_color = self._color if active else QColor(100, 100, 140)
+        text_color = self._color if active else QColor(70, 80, 100)
         if hover and not active:
             text_color = self._color
         p.setPen(text_color)
@@ -213,7 +213,7 @@ class FUIStatusBar(QWidget):
         layout.addWidget(self._accent_bar)
 
         row = QWidget()
-        row.setStyleSheet(f"background:rgba(8,8,16,200);")
+        row.setStyleSheet(f"background:rgba(0,0,0,200);")
         row_layout = QHBoxLayout(row)
         row_layout.setContentsMargins(20, 6, 20, 8)
 
@@ -333,20 +333,20 @@ class FUIProgressBar(QWidget):
             sh = r.height() - 2
 
             if i >= fill_count:
-                p.fillRect(sx, sy, seg_w, sh, QColor(20, 20, 50))
+                p.fillRect(sx, sy, seg_w, sh, QColor(8, 8, 8))
                 continue
 
-            if i < 2:
-                c = QColor(255, 34, 68)
+            if i < 3:
+                c = QColor(102, 51, 0)
             elif i < 8:
-                c = QColor(255, 204, 0)
+                c = QColor(204, 82, 0)
             else:
-                c = QColor(0, 204, 102)
+                c = QColor(255, 102, 0)
             p.fillRect(sx, sy, seg_w, sh, c)
 
 
 class FUIContinuousBar(QWidget):
-    """Single continuous bar with red→yellow→green gradient position."""
+    """Single continuous bar with orange fill."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -369,23 +369,23 @@ class FUIContinuousBar(QWidget):
         h = r.height() - 2
 
         if fill_w < w:
-            p.fillRect(r.x() + fill_w, y, w - fill_w, h, QColor(20, 20, 50))
+            p.fillRect(r.x() + fill_w, y, w - fill_w, h, QColor(8, 8, 8))
 
         if fill_w > 0:
-            r_end = int(w * 0.20)
+            r_end = int(w * 0.30)
             g_start = int(w * 0.80)
 
             rw = min(r_end, fill_w)
             if rw > 0:
-                p.fillRect(r.x(), y, rw, h, QColor(255, 34, 68))
+                p.fillRect(r.x(), y, rw, h, QColor(102, 51, 0))
             if fill_w > r_end:
                 yw = min(g_start, fill_w) - r_end
                 if yw > 0:
-                    p.fillRect(r.x() + r_end, y, yw, h, QColor(255, 204, 0))
+                    p.fillRect(r.x() + r_end, y, yw, h, QColor(204, 82, 0))
             if fill_w > g_start:
                 gw = fill_w - g_start
                 if gw > 0:
-                    p.fillRect(r.x() + g_start, y, gw, h, QColor(0, 204, 102))
+                    p.fillRect(r.x() + g_start, y, gw, h, QColor(255, 102, 0))
 
 
 LcarsBlock = FUIPanel

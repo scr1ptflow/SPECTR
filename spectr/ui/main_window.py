@@ -23,23 +23,23 @@ from spectr.ui.widgets import (
 log = logging.getLogger(__name__)
 
 _STATUS_COLOR = {
-    "ONLINE":      "#00d4ff",
-    "OFFLINE":     "#ff2244",
-    "MAINTENANCE": "#ff6600",
+    "ONLINE":      CYAN,
+    "OFFLINE":     RED,
+    "MAINTENANCE": ORANGE,
     "UNKNOWN":     GRAY,
 }
 
 TAB_ITEMS = [
-    ("dashboard",    "NEWS",         CYAN),
+    ("dashboard",    "NEWS",         ORANGE),
     ("commander",    "COMMANDER",    ORANGE),
-    ("ship",         "SHIP",         BLUE),
-    ("location",     "LOCATION",     PURPLE),
-    ("scanner",      "SCANNER",      CYAN),
-    ("missions",     "MISSIONS",     TEAL),
-    ("engineering",  "ENGINEERING",  GREEN),
-    ("captainslog",  "LOG",          PINK),
-    ("laboratory",   "LABORATORY",   YELLOW),
-    ("settings",     "SETTINGS",     GRAY),
+    ("ship",         "SHIP",         ORANGE),
+    ("location",     "LOCATION",     ORANGE),
+    ("scanner",      "SCANNER",      ORANGE),
+    ("missions",     "MISSIONS",     ORANGE),
+    ("engineering",  "ENGINEERING",  ORANGE),
+    ("captainslog",  "LOG",          ORANGE),
+    ("laboratory",   "LABORATORY",   ORANGE),
+    ("settings",     "SETTINGS",     ORANGE),
 ]
 
 TAB_PANELS = {
@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        self.status_bar = FUIStatusBar(CYAN)
+        self.status_bar = FUIStatusBar(ORANGE)
         root.addWidget(self.status_bar)
 
         body = QHBoxLayout()
@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
 
         sep = QWidget()
         sep.setFixedWidth(1)
-        sep.setStyleSheet("background:rgba(0,212,255,30);")
+        sep.setStyleSheet("background:rgba(255,102,0,30);")
         body.addWidget(sep)
 
         self.stack = QStackedWidget()
