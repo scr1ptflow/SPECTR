@@ -8,7 +8,7 @@ from PySide6.QtGui import (
     QColor, QPainter, QPen, QFont, QLinearGradient,
 )
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget,
+    QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget,
 )
 
 CYAN    = "#00ccdd"
@@ -75,7 +75,7 @@ class FUIPanel(QFrame):
             title_row.setSpacing(10)
             self.title_label = QLabel(title.upper())
             self.title_label.setStyleSheet(
-                f"color:{color};font-size:11px;font-weight:bold;"
+                f"color:{color};font-weight:bold;"
                 f"background:transparent;border:none;padding:0;"
                 f"letter-spacing:2px;"
             )
@@ -113,7 +113,7 @@ class FUITab(QPushButton):
     def __init__(self, text: str, color: str = CYAN, parent=None):
         super().__init__(text, parent)
         self._color = QColor(color)
-        self._font = QFont("sans-serif", 11)
+        self._font = QFont("sans-serif")
         self._font.setBold(False)
         self.setCheckable(True)
         self.setFixedHeight(self._HEIGHT)
@@ -165,7 +165,7 @@ class FUIButton(QPushButton):
         self._color = QColor(color)
         self.setFixedHeight(32)
         self.setCursor(Qt.PointingHandCursor)
-        f = QFont("sans-serif", 10)
+        f = QFont("sans-serif")
         f.setBold(True)
         self.setFont(f)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
@@ -220,13 +220,13 @@ class FUIStatusBar(QWidget):
 
         self.status_icon = QLabel("◇")
         self.status_icon.setStyleSheet(
-            f"color:{color};font-size:14px;background:transparent;"
+            f"color:{color};background:transparent;"
         )
         row_layout.addWidget(self.status_icon)
 
         self.status_text = QLabel("SYS: ONLINE")
         self.status_text.setStyleSheet(
-            f"color:{color};font-size:11px;font-weight:bold;background:transparent;"
+            f"color:{color};font-weight:bold;background:transparent;"
             f"letter-spacing:1px;"
         )
         row_layout.addWidget(self.status_text)
@@ -243,14 +243,14 @@ class FUIStatusBar(QWidget):
 
         self.game_time_label = QLabel()
         self.game_time_label.setStyleSheet(
-            f"color:{GRAY_L};font-size:11px;font-weight:normal;"
+            f"color:{GRAY_L};font-weight:normal;"
             f"background:transparent;letter-spacing:1px;"
         )
         time_layout.addWidget(self.game_time_label)
 
         self.local_time_label = QLabel()
         self.local_time_label.setStyleSheet(
-            f"color:{GRAY_L};font-size:11px;font-weight:normal;"
+            f"color:{GRAY_L};font-weight:normal;"
             f"background:transparent;letter-spacing:1px;"
         )
         time_layout.addWidget(self.local_time_label)
@@ -294,11 +294,11 @@ class FUIStatusBar(QWidget):
 
     def set_status_color(self, color: str):
         self.status_text.setStyleSheet(
-            f"color:{color};font-size:11px;font-weight:bold;background:transparent;"
+            f"color:{color};font-weight:bold;background:transparent;"
             f"letter-spacing:1px;"
         )
         self.status_icon.setStyleSheet(
-            f"color:{color};font-size:14px;background:transparent;"
+            f"color:{color};background:transparent;"
         )
 
 
@@ -411,29 +411,146 @@ class SystemMapWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._bodies: list[dict] = []
+        self._all_bodies: list[dict] = []
+        self._visible_ids: set = set()
         self._selected: int | None = None
         self._body_rects: list[tuple[dict, int, int, int, int]] = []
+        self._pan_x = 0.0
+        self._pan_y = 0.0
+        self._dragging = False
+        self._clicked_body = False
+        self._drag_start: tuple[float, float] = (0, 0)
+        self._pan_start: tuple[float, float] = (0, 0)
         self.setMinimumSize(400, 400)
         self.setStyleSheet("background:#000000;border:1px solid #0e1420;border-radius:4px;")
         self.setCursor(Qt.PointingHandCursor)
+        self.setMouseTracking(True)
 
     def set_bodies(self, bodies: list[dict]) -> None:
+        self._all_bodies = bodies
+        self._visible_ids = {b.get("BodyId") for b in bodies}
         self._bodies = bodies
         self._selected = None
         self._body_rects.clear()
+        self._pan_x = 0.0
+        self._pan_y = 0.0
+        self.update()
+
+    def set_visible(self, body_ids: set) -> None:
+        self._visible_ids = body_ids
+        self._bodies = [b for b in self._all_bodies if b.get("BodyId") in body_ids]
         self.update()
 
     def mousePressEvent(self, ev) -> None:
-        mx, my = ev.position().x(), ev.position().y()
-        for body, bx, by, bw, bh in self._body_rects:
-            if bx <= mx <= bx + bw and by <= my <= by + bh:
-                self._selected = body.get("BodyId")
+        if ev.button() == Qt.LeftButton:
+            mx, my = ev.position().x(), ev.position().y()
+            for body, bx, by, bw, bh in self._body_rects:
+                if bx <= mx <= bx + bw and by <= my <= by + bh:
+                    self._selected = body.get("BodyId")
+                    self._clicked_body = True
+                    self.update()
+                    self.body_clicked.emit(body)
+                    return
+            self._clicked_body = False
+            self._dragging = True
+            self._drag_start = (mx, my)
+            self._pan_start = (self._pan_x, self._pan_y)
+            self.setCursor(Qt.ClosedHandCursor)
+
+    def mouseReleaseEvent(self, ev) -> None:
+        if ev.button() == Qt.LeftButton:
+            if self._dragging:
+                self._dragging = False
+                self.setCursor(Qt.PointingHandCursor)
+            elif not self._clicked_body:
+                self._selected = None
                 self.update()
-                self.body_clicked.emit(body)
-                return
-        self._selected = None
-        self.update()
-        self.body_clicked.emit({})
+                self.body_clicked.emit({})
+            self._clicked_body = False
+
+    def mouseMoveEvent(self, ev) -> None:
+        if self._dragging:
+            mx, my = ev.position().x(), ev.position().y()
+            dx = mx - self._drag_start[0]
+            dy = my - self._drag_start[1]
+            self._pan_x = self._pan_start[0] + dx
+            self._pan_y = self._pan_start[1] + dy
+            self._clamp_pan()
+            self.update()
+
+    def _body_bounds(self) -> tuple[float, float, float, float]:
+        """Return (min_x, max_x, min_y, max_y) of all bodies at origin (no pan)."""
+        if not self._bodies:
+            return (0, 0, 0, 0)
+        w = self.width()
+        h = self.height()
+        ox, oy = w // 2, h // 2
+
+        stars = [b for b in self._bodies if b.get("StarType")]
+        planets = [b for b in self._bodies if not b.get("StarType")]
+
+        positions: list[tuple[float, float, float]] = []
+
+        if len(stars) == 1:
+            sr = max(14, min(28, int(self._radius_for_star(stars[0]) * 14)))
+            positions.append((ox, oy, sr))
+        elif len(stars) >= 2:
+            star_orbit = min(ox, oy) * 0.45
+            for i, s in enumerate(stars):
+                angle = (i * 2 * math.pi) / len(stars) - math.pi / 2
+                sr = max(10, min(20, int(self._radius_for_star(s) * 10)))
+                positions.append((ox + star_orbit * math.cos(angle), oy + star_orbit * math.sin(angle), sr))
+
+        max_orbit = max(
+            (b.get("SemiMajorAxis") or b.get("DistanceFromArrivalLs") or 1)
+            for b in planets
+        ) if planets else 1
+
+        base_r = max(14, min(28, int(self._radius_for_star(stars[0]) * 14))) if stars else 14
+        min_orbit_r = base_r + 30 if len(stars) <= 1 else min(ox, oy) * 0.6
+        max_orbit_r = min(ox, oy) - 30
+        if max_orbit_r < min_orbit_r + 20:
+            max_orbit_r = min_orbit_r + 60
+
+        for b in planets:
+            dist = b.get("SemiMajorAxis") or b.get("DistanceFromArrivalLs") or 0
+            if dist <= 0:
+                dist = max_orbit * 0.5
+            orbit_r = min_orbit_r + (max_orbit_r - min_orbit_r) * (dist / max_orbit) if max_orbit > 0 else min_orbit_r + 40
+            body_radius = self._radius_for_planet(b)
+            angle = (b.get("BodyId", 0) * 2.399) % (2 * math.pi)
+            bx = ox + orbit_r * math.cos(angle)
+            by = oy + orbit_r * math.sin(angle)
+            positions.append((bx, by, body_radius))
+
+        if not positions:
+            return (0, 0, 0, 0)
+
+        min_x = min(p[0] - p[2] for p in positions)
+        max_x = max(p[0] + p[2] for p in positions)
+        min_y = min(p[1] - p[2] for p in positions)
+        max_y = max(p[1] + p[2] for p in positions)
+        return (min_x, max_x, min_y, max_y)
+
+    def _clamp_pan(self) -> None:
+        """Clamp pan so the body bounding box stays within the widget."""
+        min_x, max_x, min_y, max_y = self._body_bounds()
+        margin = 20
+        ox, oy = self.width() // 2, self.height() // 2
+
+        if max_x - min_x < self.width() - margin * 2:
+            center_x = (min_x + max_x) / 2
+            target_pan_x = self.width() / 2 - center_x
+            self._pan_x = target_pan_x
+        else:
+            self._pan_x = max(self.width() - margin - max_x, min(margin - min_x, self._pan_x))
+
+        if max_y - min_y < self.height() - margin * 2:
+            center_y = (min_y + max_y) / 2
+            target_pan_y = self.height() / 2 - center_y
+            self._pan_y = target_pan_y
+        else:
+            self._pan_y = max(self.height() - margin - max_y, min(margin - min_y, self._pan_y))
 
     def paintEvent(self, event) -> None:
         p = QPainter(self)
@@ -441,7 +558,8 @@ class SystemMapWidget(QWidget):
         r = self.rect()
         p.fillRect(r, QColor(0, 0, 0))
 
-        cx, cy = r.width() // 2, r.height() // 2
+        ox, oy = r.width() // 2, r.height() // 2
+        cx, cy = ox + int(self._pan_x), oy + int(self._pan_y)
         if not self._bodies:
             p.setPen(QColor(*_hex_rgb(GRAY)))
             p.setFont(QFont("monospace", 10))
@@ -458,11 +576,11 @@ class SystemMapWidget(QWidget):
             sr = max(14, min(28, int(self._radius_for_star(stars[0]) * 14)))
             self._draw_star(p, stars[0], sx, sy, sr)
         elif len(stars) >= 2:
-            orbit_r = min(cx, cy) * 0.45
+            star_orbit_r = min(ox, oy) * 0.45
             for i, s in enumerate(stars):
                 angle = (i * 2 * math.pi) / len(stars) - math.pi / 2
-                sx = int(cx + orbit_r * math.cos(angle))
-                sy = int(cy + orbit_r * math.sin(angle))
+                sx = int(cx + star_orbit_r * math.cos(angle))
+                sy = int(cy + star_orbit_r * math.sin(angle))
                 sr = max(10, min(20, int(self._radius_for_star(s) * 10)))
                 self._draw_star(p, s, sx, sy, sr)
         elif stars:
@@ -475,8 +593,8 @@ class SystemMapWidget(QWidget):
         ) if planets else 1
 
         base_r = max(14, min(28, int(self._radius_for_star(stars[0]) * 14))) if stars else 14
-        min_orbit_r = base_r + 30 if len(stars) <= 1 else min(cx, cy) * 0.6
-        max_orbit_r = min(cx, cy) - 30
+        min_orbit_r = base_r + 30 if len(stars) <= 1 else min(ox, oy) * 0.6
+        max_orbit_r = min(ox, oy) - 30
         if max_orbit_r < min_orbit_r + 20:
             max_orbit_r = min_orbit_r + 60
 
@@ -581,6 +699,106 @@ class SystemMapWidget(QWidget):
         if "volcanic" in pclass or "lava" in pclass:
             return "#cc3300"
         return "#665544"
+
+
+class FUIAnnunciator(QWidget):
+    """Cockpit-style warning annunciator light.
+
+    Dim when off, glows amber or red when active.
+    """
+
+    _OFF_BG = "#0a0c10"
+    _OFF_BORDER = "#151a24"
+
+    def __init__(self, label: str, parent=None):
+        super().__init__(parent)
+        self._label = label.upper()
+        self._active = False
+        self._color = QColor(ORANGE)
+        self._flash = False
+        self.setFixedSize(52, 26)
+
+    def set_warning(self, color: str = ORANGE, flash: bool = False) -> None:
+        self._active = True
+        self._color = QColor(color)
+        self._flash = flash
+        self.update()
+
+    def clear(self) -> None:
+        self._active = False
+        self._flash = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = self.rect()
+
+        if self._active:
+            glow = QColor(self._color)
+            glow.setAlpha(35)
+            p.setPen(Qt.NoPen)
+            p.setBrush(glow)
+            p.drawRoundedRect(r, 3, 3)
+
+            border = QColor(self._color)
+            border.setAlpha(120)
+            p.setPen(QPen(border, 1))
+            p.setBrush(Qt.NoBrush)
+            p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 3, 3)
+
+            text_color = QColor(self._color)
+        else:
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(self._OFF_BG))
+            p.drawRoundedRect(r, 3, 3)
+
+            p.setPen(QPen(QColor(self._OFF_BORDER), 1))
+            p.setBrush(Qt.NoBrush)
+            p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 3, 3)
+
+            text_color = QColor(GRAY)
+
+        p.setPen(text_color)
+        p.setFont(QFont("monospace"))
+        p.drawText(r, Qt.AlignCenter, self._label)
+
+
+class FUIAnnunciatorPanel(QWidget):
+    """Two-column grid of annunciator lights."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._items: dict[str, FUIAnnunciator] = {}
+        self._grid = QGridLayout(self)
+        self._grid.setContentsMargins(0, 0, 0, 0)
+        self._grid.setSpacing(4)
+        self._grid.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self._row = 0
+        self._col = 0
+
+    def add(self, key: str, label: str) -> FUIAnnunciator:
+        ann = FUIAnnunciator(label)
+        self._items[key] = ann
+        self._grid.addWidget(ann, self._row, self._col)
+        if self._col == 0:
+            self._col = 1
+        else:
+            self._col = 0
+            self._row += 1
+        return ann
+
+    def set_warning(self, key: str, color: str = ORANGE, flash: bool = False) -> None:
+        if key in self._items:
+            self._items[key].set_warning(color, flash)
+
+    def clear(self, key: str) -> None:
+        if key in self._items:
+            self._items[key].clear()
+
+    def clear_all(self) -> None:
+        for ann in self._items.values():
+            ann.clear()
 
 
 def _hex_rgb(hex_color: str) -> tuple[int, int, int]:

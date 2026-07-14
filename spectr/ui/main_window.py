@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
-    QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget,
+    QApplication, QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from spectr.config import load_config
@@ -37,9 +37,9 @@ TAB_ITEMS = [
     ("scanner",      "SCANNER",      ORANGE),
     ("missions",     "MISSIONS",     ORANGE),
     ("engineering",  "ENGINEERING",  ORANGE),
-    ("captainslog",  "LOG",          ORANGE),
     ("laboratory",   "LABORATORY",   ORANGE),
     ("settings",     "SETTINGS",     ORANGE),
+    ("captainslog",  "LOG",          ORANGE),
 ]
 
 TAB_PANELS = {
@@ -50,9 +50,9 @@ TAB_PANELS = {
     "scanner":      ScannerPanel,
     "missions":     MissionsPanel,
     "engineering":  EngineeringPanel,
-    "captainslog":  CaptainsLogPanel,
     "laboratory":   LaboratoryPanel,
     "settings":     SettingsPanel,
+    "captainslog":  CaptainsLogPanel,
 }
 
 _TAB_COLORS = {k: c for k, _, c in TAB_ITEMS}
@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
         self._current_tab = "dashboard"
         self._settings = QSettings("SPECTR", "SPECTR")
         self._setup_ui()
+        self.apply_font_size()
         self._restore_window_state()
         self._start_status_checker()
         log.info("SPECTR started — journal path: %s", self.config.get("journal_path", "(unset)"))
@@ -139,6 +140,18 @@ class MainWindow(QMainWindow):
         state = self._settings.value("window/state")
         if state is not None:
             self.restoreState(state)
+
+    def apply_font_size(self) -> None:
+        try:
+            size = int(self.config.get("font_size", "11"))
+        except (ValueError, TypeError):
+            size = 11
+        size = max(8, min(32, size))
+        app = QApplication.instance()
+        if app:
+            font = app.font()
+            font.setPointSize(size)
+            app.setFont(font)
 
     def closeEvent(self, event) -> None:
         self._settings.setValue("window/geometry", self.saveGeometry())

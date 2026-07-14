@@ -20,7 +20,7 @@ from spectr.inara import InaraClient
 from spectr.ui.widgets import (
     CYAN, ORANGE, BLUE, PURPLE, TEAL, YELLOW, RED, PINK, GREEN, GRAY, GRAY_L, WHITE, DARK, DARK2, DARK3,
     LcarsBar, LcarsBlock, LcarsPill, HealthBar, lcars_color,
-    SystemMapWidget,
+    SystemMapWidget, FUIAnnunciatorPanel,
 )
 
 log = logging.getLogger(__name__)
@@ -123,7 +123,7 @@ class PanelBase(QWidget):
 
         self.title_label = QLabel(title.upper())
         self.title_label.setStyleSheet(
-            f"color:{color};font-size:16px;font-weight:bold;"
+            f"color:{color};font-weight:bold;"
             f"background:transparent;letter-spacing:2px;"
         )
         hdr.addWidget(self.title_label)
@@ -177,7 +177,7 @@ class DashboardPanel(PanelBase):
         self.article_view.setOpenExternalLinks(True)
         self.article_view.setStyleSheet(
             f"background:{DARK2};border:1px solid #0e1420;border-radius:4px;"
-            f"padding:8px;color:{WHITE};font-size:14px;"
+            f"padding:8px;color:{WHITE};"
         )
         block.content_layout().addWidget(self.article_view)
         c.addWidget(block, 1)
@@ -256,7 +256,7 @@ class DashboardPanel(PanelBase):
             fg = DARK if active else ORANGE
             btn.setStyleSheet(
                 f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
+                f"color:{fg};border-radius:4px;font-weight:bold;}}"
                 f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
             if active:
@@ -302,7 +302,7 @@ class CommanderPanel(PanelBase):
 
         id_block = LcarsBlock("", ORANGE)
         self.cmdr_label = QLabel()
-        self.cmdr_label.setStyleSheet(f"color:{WHITE};font-size:16px;font-weight:bold;background:transparent;")
+        self.cmdr_label.setStyleSheet(f"color:{WHITE};font-weight:bold;background:transparent;")
         id_block.content_layout().addWidget(self.cmdr_label)
         c.addWidget(id_block)
 
@@ -322,7 +322,7 @@ class CommanderPanel(PanelBase):
             block.content_layout().setSpacing(2)
 
             rank_name = QLabel("---")
-            rank_name.setStyleSheet(f"color:{WHITE};font-size:13px;background:transparent;")
+            rank_name.setStyleSheet(f"color:{WHITE};background:transparent;")
             block.content_layout().addWidget(rank_name)
             self._rank_names[cat] = rank_name
 
@@ -433,7 +433,7 @@ class CommanderPanel(PanelBase):
         return InaraClient(
             api_key=api_key,
             cmdr_name=cmdr,
-            app_name=config.get("inara_app_name", "SPECTR"),
+            app_name=config.get("inara_cmdr_name", "SPECTR"),
         )
 
     def _clear_layout(self, layout):
@@ -459,15 +459,20 @@ class ShipPanel(PanelBase):
         id_block = LcarsBlock("", ORANGE)
         self.ship_name_label = QLabel()
         self.ship_name_label.setAlignment(Qt.AlignCenter)
-        self.ship_name_label.setStyleSheet(f"color:{WHITE};font-size:16px;font-weight:bold;background:transparent;")
+        self.ship_name_label.setStyleSheet(f"color:{WHITE};font-weight:bold;background:transparent;")
         id_block.content_layout().addWidget(self.ship_name_label)
         c.addWidget(id_block)
 
         c.addWidget(LcarsBar(ORANGE, 2))
+
         stats_row = QHBoxLayout()
         stats_row.setSpacing(12)
 
         self.shield_stat = self._make_stat_box("Shield Generator", ORANGE)
+        self._shield_numbers = QLabel("100%")
+        self._shield_numbers.setAlignment(Qt.AlignCenter)
+        self._shield_numbers.setStyleSheet(f"color:{WHITE};font-weight:bold;background:transparent;")
+        self.shield_stat.content_layout().addWidget(self._shield_numbers)
         stats_row.addWidget(self.shield_stat)
 
         self.fuel_stat = LcarsBlock("Fuel Tank", ORANGE)
@@ -477,7 +482,7 @@ class ShipPanel(PanelBase):
         self.fuel_stat.content_layout().addWidget(fuel_integrity_bar)
         self._fuel_numbers = QLabel("0.0t / 0.0t")
         self._fuel_numbers.setAlignment(Qt.AlignCenter)
-        self._fuel_numbers.setStyleSheet(f"color:{WHITE};font-size:12px;font-weight:bold;background:transparent;")
+        self._fuel_numbers.setStyleSheet(f"color:{WHITE};font-weight:bold;background:transparent;")
         self.fuel_stat.content_layout().addWidget(self._fuel_numbers)
         stats_row.addWidget(self.fuel_stat)
 
@@ -487,11 +492,53 @@ class ShipPanel(PanelBase):
         c.addLayout(stats_row)
 
         c.addWidget(LcarsBar(ORANGE, 4))
-        self._module_block = LcarsBlock("", ORANGE)
-        self._module_grid = QGridLayout()
-        self._module_grid.setSpacing(6)
-        self._module_block.content_layout().addLayout(self._module_grid)
-        c.addWidget(self._module_block, 1)
+
+        mid_row = QHBoxLayout()
+        mid_row.setSpacing(12)
+
+        self._module_block_l = LcarsBlock("", ORANGE)
+        scroll_l = QScrollArea()
+        scroll_l.setWidgetResizable(True)
+        scroll_l.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_l.setStyleSheet("QScrollArea{background:transparent;border:none;}")
+        cont_l = QWidget()
+        cont_l.setStyleSheet("background:transparent;")
+        self._module_grid_l = QGridLayout(cont_l)
+        self._module_grid_l.setSpacing(2)
+        scroll_l.setWidget(cont_l)
+        self._module_block_l.content_layout().addWidget(scroll_l)
+        mid_row.addWidget(self._module_block_l, 1)
+
+        self._ann = FUIAnnunciatorPanel()
+        self._ann.add("fsd", "FSD")
+        self._ann.add("wpn", "WPN")
+        self._ann.add("multi", "MULTI")
+        self._ann.add("power", "POWER")
+        self._ann.add("drive", "DRIVE")
+        self._ann.add("life", "LIFE")
+        self._ann.add("hatch", "HATCH")
+        self._ann.add("lndg", "LNDG")
+        self._ann.add("scoop", "FUEL")
+        self._ann.add("hardp", "HARDP")
+        self._ann.add("silent", "SILENT")
+        ann_block = LcarsBlock("WARNINGS", ORANGE)
+        ann_block.content_layout().addWidget(self._ann)
+        mid_row.addWidget(ann_block)
+
+        self._module_block_r = LcarsBlock("", ORANGE)
+        scroll_r = QScrollArea()
+        scroll_r.setWidgetResizable(True)
+        scroll_r.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_r.setStyleSheet("QScrollArea{background:transparent;border:none;}")
+        cont_r = QWidget()
+        cont_r.setStyleSheet("background:transparent;")
+        self._module_grid_r = QGridLayout(cont_r)
+        self._module_grid_r.setSpacing(2)
+        scroll_r.setWidget(cont_r)
+        self._module_block_r.content_layout().addWidget(scroll_r)
+        mid_row.addWidget(self._module_block_r, 1)
+
+        c.addLayout(mid_row, 1)
 
     def _make_stat_box(self, label: str, color: str) -> LcarsBlock:
         block = LcarsBlock(label, color)
@@ -500,6 +547,16 @@ class ShipPanel(PanelBase):
         bar.setFixedHeight(18)
         block.content_layout().addWidget(bar)
         return block
+
+    @staticmethod
+    def _mfd_status(health: float) -> tuple[str, str]:
+        if health >= 0.8:
+            return "OK", GREEN
+        if health >= 0.5:
+            return "LOW", YELLOW
+        if health >= 0.2:
+            return "WARN", ORANGE
+        return "CRIT", RED
 
     def refresh(self) -> None:
         journal = self.window.journal
@@ -535,6 +592,9 @@ class ShipPanel(PanelBase):
 
         fuel_current = fuel_capacity
         shields_up = False
+        shields_mj = 0.0
+        oxygen = 0.0
+        flags = 0
         status_path = self._find_status_file(journal_path)
         if status_path and status_path.exists():
             try:
@@ -543,80 +603,178 @@ class ShipPanel(PanelBase):
                 fuel_current = status.get("Fuel", {}).get("FuelMain", fuel_capacity)
                 flags = status.get("Flags", 0)
                 shields_up = bool(flags & (1 << 3))
+                shields_mj = status.get("Shields", 0.0)
+                oxygen = status.get("Oxygen", 0.0)
             except Exception:
                 pass
 
         if not shields_up:
             shield_health = 0.0
+            shields_mj = 0.0
 
         self.findChild(HealthBar, "stat-bar-shield").set_value(shield_health)
+        self._shield_numbers.setText(f"{int(shield_health * 100)}%")
         fuel_pct = fuel_current / fuel_capacity if fuel_capacity > 0 else 0
-        self.findChild(HealthBar, "stat-bar-fuel").set_value(
-            fuel_pct
-        )
+        self.findChild(HealthBar, "stat-bar-fuel").set_value(fuel_pct)
         self._fuel_numbers.setText(f"{fuel_current:.1f}t / {fuel_capacity:.1f}t")
         self.findChild(HealthBar, "stat-bar-hull").set_value(hull_health)
 
         cos_slots = {"Decal1", "Decal2", "Decal3", "Nameplate", "ShipKitSpoiler",
                       "ShipKitWings", "ShipKitTail", "ShipKitArms",
                       "WeaponColour", "EngineColour", "ShipNameplate",
-                      "VesselVoice"}
+                      "VesselVoice", "FuelTank"}
 
-        combat_relevant = {"PowerPlant", "MainEngines", "FrameShiftDrive",
-                           "LifeSupport", "PowerDistributor", "Sensors",
-                           "Armour", "ShieldGenerator", "CargoHatch"}
+        self._ann.clear_all()
+
+        if oxygen > 0:
+            if oxygen > 600:
+                self._ann.set_warning("life", GREEN)
+            elif oxygen > 180:
+                self._ann.set_warning("life", YELLOW)
+            elif oxygen > 60:
+                self._ann.set_warning("life", ORANGE)
+            else:
+                self._ann.set_warning("life", RED)
+        else:
+            self._ann.clear("life")
+
+        if bool(flags & 0x04):
+            self._ann.set_warning("lndg", GREEN)
+        if bool(flags & 0x800):
+            self._ann.set_warning("scoop", GREEN)
+        if bool(flags & 0x40):
+            self._ann.set_warning("hardp", GREEN)
+        if bool(flags & 0x400):
+            self._ann.set_warning("silent", GREEN)
+        if bool(flags & 0x200):
+            self._ann.set_warning("hatch", GREEN)
+
+        for m in modules:
+            slot = m.get("Slot", "")
+            item = m.get("Item", "")
+            health = m.get("Health", 1.0)
+            item_lower = item.lower()
+
+            if slot == "FrameShiftDrive" and health < 0.8:
+                self._ann.set_warning("fsd", ORANGE)
+
+            is_laser = any(t in item_lower for t in ("laser", "beamlaser", "pulselaser", "burstmultilaser"))
+            if is_laser and health < 0.8:
+                self._ann.set_warning("wpn", ORANGE)
+
+            if "missile" in item_lower or "torpedo" in item_lower:
+                self._ann.set_warning("multi", ORANGE)
+
+            if slot == "PowerPlant":
+                if health < 0.2:
+                    self._ann.set_warning("power", RED)
+                elif health < 0.5:
+                    self._ann.set_warning("power", ORANGE)
+
+            if slot == "MainEngines" and health < 0.8:
+                self._ann.set_warning("drive", RED)
+
+            if slot == "CargoHatch" and health < 0.5:
+                self._ann.set_warning("hatch", RED)
+
+        _CORE_SLOTS = {"PowerPlant", "MainEngines", "FrameShiftDrive",
+                       "LifeSupport", "PowerDistributor", "Sensors",
+                       "Armour", "ShieldGenerator", "CargoHatch"}
+
+        def _module_category(slot: str) -> int:
+            if slot in _CORE_SLOTS:
+                return 0
+            if "TinyHardpoint" in slot:
+                return 2
+            if "Hardpoint" in slot:
+                return 1
+            if "Utility" in slot:
+                return 2
+            return 3
+
+        _CAT_NAMES = ["CORE", "HARDPOINTS", "UTILITY", "OPTIONAL"]
 
         filtered = [m for m in modules if m.get("Slot") not in cos_slots]
-        filtered.sort(key=lambda m: (
-            0 if m.get("Slot") in combat_relevant else 1,
-            m.get("Slot", "")
-        ))
+        filtered.sort(key=lambda m: (_module_category(m.get("Slot", "")), m.get("Slot", "")))
 
         for w in self._module_cells:
             w.deleteLater()
         self._module_cells.clear()
 
-        cols = 2
-        for i, m in enumerate(filtered):
-            slot = m.get("Slot", "?")
-            item = m.get("Item", "?")
-            name = m.get("Item_Localised") or _slot_label(slot, item)
-            health = m.get("Health", 1.0)
+        grouped: dict[int, list[dict]] = {}
+        for m in filtered:
+            cat = _module_category(m.get("Slot", ""))
+            grouped.setdefault(cat, []).append(m)
 
-            eng = m.get("Engineering")
-            eng_text = ""
-            if eng:
-                grade = eng.get("Grade", 0)
-                max_grade = eng.get("MaxGrade", 5)
-                eng_name = eng.get("Modifier", "")
-                if grade and max_grade:
-                    eng_text = f" G{grade}/{max_grade}"
-                if eng_name:
-                    eng_text += f" {eng_name}"
+        left_items = []
+        right_items = []
+        for cat in sorted(grouped):
+            items = [("__header__", _CAT_NAMES[cat])] + [("module", m) for m in grouped[cat]]
+            if cat == 3:
+                right_items.extend(items)
+            else:
+                left_items.extend(items)
 
-            cell = QWidget()
-            cell.setStyleSheet(f"background:{DARK2};border-radius:4px;border:1px solid #0e1420;")
-            row = QHBoxLayout(cell)
-            row.setContentsMargins(8, 2, 8, 2)
-            row.setSpacing(6)
+        for grid, items in ((self._module_grid_l, left_items), (self._module_grid_r, right_items)):
+            row_idx = 0
+            col_idx = 0
+            for entry in items:
+                if entry[0] == "__header__":
+                    col_idx = 0
+                    if row_idx > 0:
+                        row_idx += 1
+                    hdr = QLabel(entry[1])
+                    hdr.setStyleSheet(f"color:{ORANGE};font-weight:bold;background:transparent;")
+                    grid.addWidget(hdr, row_idx, 0, 1, 2)
+                    row_idx += 1
+                    continue
 
-            name_lbl = QLabel(name)
-            name_lbl.setStyleSheet(f"color:{WHITE};font-size:11px;background:transparent;")
-            name_lbl.setFixedWidth(160)
-            row.addWidget(name_lbl)
+                m = entry[1]
+                slot = m.get("Slot", "?")
+                item = m.get("Item", "?")
+                name = m.get("Item_Localised") or _slot_label(slot, item)
+                rating = _module_rating(item)
+                health = m.get("Health", 1.0)
 
-            if eng_text:
-                eng_lbl = QLabel(eng_text)
-                eng_lbl.setStyleSheet(f"color:{TEAL};font-size:10px;background:transparent;")
-                row.addWidget(eng_lbl)
+                eng = m.get("Engineering")
+                eng_text = ""
+                if eng:
+                    grade = eng.get("Grade", 0)
+                    max_grade = eng.get("MaxGrade", 5)
+                    eng_name = eng.get("Modifier", "")
+                    if grade and max_grade:
+                        eng_text = f" G{grade}/{max_grade}"
+                    if eng_name:
+                        eng_text += f" {eng_name}"
 
-            bar = HealthBar()
-            bar.setFixedHeight(14)
-            bar.set_value(health)
-            row.addWidget(bar, 1)
+                cell = QWidget()
+                cell.setStyleSheet(f"background:{DARK2};border-radius:4px;border:1px solid #0e1420;")
+                row = QHBoxLayout(cell)
+                row.setContentsMargins(6, 1, 6, 1)
+                row.setSpacing(4)
 
-            self._module_grid.addWidget(cell, i // cols, i % cols)
-            self._module_cells.append(cell)
+                display = f"[{rating}] {name}" if rating else name
+                name_lbl = QLabel(display)
+                name_lbl.setStyleSheet(f"color:{WHITE};background:transparent;")
+                row.addWidget(name_lbl)
+
+                if eng_text:
+                    eng_lbl = QLabel(eng_text)
+                    eng_lbl.setStyleSheet(f"color:{TEAL};background:transparent;")
+                    row.addWidget(eng_lbl)
+
+                text, color = self._mfd_status(health)
+                status_lbl = QLabel(f"{text} {int(health * 100)}%")
+                status_lbl.setStyleSheet(f"color:{color};font-weight:bold;background:transparent;")
+                row.addWidget(status_lbl)
+
+                grid.addWidget(cell, row_idx, col_idx)
+                self._module_cells.append(cell)
+
+                col_idx += 1
+                if col_idx >= 2:
+                    col_idx = 0
+                    row_idx += 1
 
     @staticmethod
     def _find_status_file(journal_path: Path | None) -> Path | None:
@@ -648,7 +806,7 @@ class LocationPanel(PanelBase):
         self.map_widget.body_clicked.connect(self._on_body_clicked)
         self.map_widget.setMinimumHeight(450)
         map_block.content_layout().addWidget(self.map_widget)
-        top_row.addWidget(map_block, 4)
+        top_row.addWidget(map_block, 3)
 
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
@@ -660,7 +818,7 @@ class LocationPanel(PanelBase):
         for key in ("system", "faction", "government", "economy", "security", "allegiance", "population", "station"):
             lbl = QLabel("")
             lbl.setWordWrap(True)
-            lbl.setStyleSheet(f"color:{WHITE};font-size:12px;background:transparent;")
+            lbl.setStyleSheet(f"color:{WHITE};background:transparent;")
             sys_inner.addWidget(lbl)
             self._sys_labels[key] = lbl
         sys_block.content_layout().addLayout(sys_inner)
@@ -672,13 +830,10 @@ class LocationPanel(PanelBase):
         c.addWidget(LcarsBar(ORANGE, 2))
 
         body_block = LcarsBlock("Body Details", ORANGE)
+        body_block.setMinimumHeight(120)
         self._body_inner = QVBoxLayout()
         self._body_inner.setSpacing(2)
         self._body_labels: dict[str, QLabel] = {}
-        self._body_placeholder = QLabel("Click a body on the map to view details")
-        self._body_placeholder.setStyleSheet(f"color:{GRAY};font-size:12px;background:transparent;")
-        self._body_placeholder.setAlignment(Qt.AlignCenter)
-        self._body_inner.addWidget(self._body_placeholder)
         body_block.content_layout().addLayout(self._body_inner)
         c.addWidget(body_block)
 
@@ -687,24 +842,19 @@ class LocationPanel(PanelBase):
         self._update_body_info()
 
     def _update_body_info(self) -> None:
-        while self._body_inner.count():
-            item = self._body_inner.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-
+        self._clear_layout(self._body_inner)
         self._body_labels.clear()
 
         if not self._selected_body:
-            lbl = QLabel("Click a body on the map to view details")
-            lbl.setStyleSheet(f"color:{GRAY};font-size:12px;background:transparent;")
+            lbl = QLabel("Select a body from the list or map")
+            lbl.setStyleSheet(f"color:{GRAY};background:transparent;")
             lbl.setAlignment(Qt.AlignCenter)
             self._body_inner.addWidget(lbl)
             return
 
         b = self._selected_body
         name = b.get("Name", "Unknown")
-        header = QLabel(f"<span style='color:{ORANGE};font-size:14px;font-weight:bold'>{name}</span>")
+        header = QLabel(f"<span style='color:{ORANGE};font-weight:bold'>{name}</span>")
         header.setStyleSheet("background:transparent;")
         self._body_inner.addWidget(header)
 
@@ -765,14 +915,24 @@ class LocationPanel(PanelBase):
             row.setSpacing(6)
             lbl_key = QLabel(f"{label}:")
             lbl_key.setFixedWidth(110)
-            lbl_key.setStyleSheet(f"color:{ORANGE};font-weight:bold;font-size:11px;background:transparent;")
+            lbl_key.setStyleSheet(f"color:{ORANGE};font-weight:bold;background:transparent;")
             row.addWidget(lbl_key)
             lbl_val = QLabel(str(value))
-            lbl_val.setStyleSheet(f"color:{WHITE};font-size:11px;background:transparent;")
+            lbl_val.setStyleSheet(f"color:{WHITE};background:transparent;")
             row.addWidget(lbl_val)
             self._body_inner.addLayout(row)
 
         self._body_inner.addStretch()
+
+    def _clear_layout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+            sub = item.layout()
+            if sub:
+                self._clear_layout(sub)
 
     def refresh(self) -> None:
         journal = self.window.journal
@@ -822,6 +982,14 @@ class LocationPanel(PanelBase):
         )
 
         self._selected_body = None
+        current_body_name = info.get("body", "")
+        if current_body_name and self._bodies:
+            for b in self._bodies:
+                bname = b.get("Name", "")
+                if current_body_name in bname or bname in current_body_name:
+                    self._selected_body = b
+                    self.map_widget._selected = b.get("BodyId")
+                    break
         self._update_body_info()
 
     def _on_bodies_from_edsm(self, bodies: list) -> None:
@@ -829,6 +997,17 @@ class LocationPanel(PanelBase):
             self._bodies = bodies
             self.map_widget.set_bodies(self._bodies)
             self.map_widget.update()
+
+            info = self.window.journal.get_system_info()
+            current_body_name = info.get("body", "")
+            if current_body_name and not self._selected_body:
+                for b in self._bodies:
+                    bname = b.get("Name", "")
+                    if current_body_name in bname or bname in current_body_name:
+                        self._selected_body = b
+                        self.map_widget._selected = b.get("BodyId")
+                        break
+            self._update_body_info()
 
 
 class MissionsPanel(PanelBase):
@@ -950,7 +1129,7 @@ class LaboratoryPanel(PanelBase):
         val = QLabel("0")
         val.setObjectName(f"lab-{label.lower().split()[0]}")
         val.setAlignment(Qt.AlignCenter)
-        val.setStyleSheet(f"font-size:28px;font-weight:bold;color:{WHITE};background:transparent;")
+        val.setStyleSheet(f"font-weight:bold;color:{WHITE};background:transparent;")
         block.content_layout().addWidget(val)
         return block
 
@@ -991,9 +1170,10 @@ class SettingsPanel(PanelBase):
              "~/Saved Games/Frontier Developments/Elite Dangerous"),
             ("commander_name",  "Commander Name", ""),
             ("inara_api_key",   "Inara API Key", ""),
-            ("inara_app_name",  "Inara App Name", "SPECTR"),
+            ("inara_cmdr_name",  "Inara Cmdr Name", ""),
             ("edsm_api_key",    "EDSM API Key", ""),
-            ("edsm_app_name",   "EDSM App Name", "SPECTR"),
+            ("edsm_cmdr_name",   "EDSM Cmdr Name", ""),
+            ("font_size",       "Font Size", "11"),
         ]
         self._inputs: dict[str, QLineEdit] = {}
         for key, label, placeholder in fields:
@@ -1029,8 +1209,8 @@ class SettingsPanel(PanelBase):
         config = self.window.config
         for key, inp in self._inputs.items():
             val = config.get(key, "")
-            if inp.placeholderText() == "SPECTR" and not val:
-                val = "SPECTR"
+            if inp.placeholderText() in ("SPECTR", "11") and not val:
+                val = inp.placeholderText()
             inp.setText(val)
 
     def _on_save(self):
@@ -1050,6 +1230,7 @@ class SettingsPanel(PanelBase):
         from spectr.config import DEFAULT_CONFIG
         self.window.config = {**DEFAULT_CONFIG, **new_config}
         self.window.journal.set_path(new_config.get("journal_path", ""))
+        self.window.apply_font_size()
 
 
 class _ScannerWorker(QThread):
@@ -1133,7 +1314,7 @@ class _EngineerWorker(QThread):
             client = InaraClient(
                 api_key=api_key,
                 cmdr_name=cmdr,
-                app_name=self.config.get("inara_app_name", "SPECTR"),
+                app_name=self.config.get("inara_cmdr_name", "SPECTR"),
             )
             profile = client.get_commander_profile()
             engineers = profile.get("commanderEngineers", []) if profile else []
@@ -1160,7 +1341,7 @@ class ScannerPanel(PanelBase):
         ctrl_inner.setSpacing(4)
 
         self.ship_info = QLabel("Ship: Unknown")
-        self.ship_info.setStyleSheet(f"color:{WHITE};font-size:12px;background:transparent;")
+        self.ship_info.setStyleSheet(f"color:{WHITE};background:transparent;")
         ctrl_inner.addWidget(self.ship_info)
 
         radius_row = QHBoxLayout()
@@ -1201,7 +1382,7 @@ class ScannerPanel(PanelBase):
         ctrl_inner.addLayout(scan_row)
 
         self.status_label = QLabel("Ready to scan")
-        self.status_label.setStyleSheet(f"color:{GRAY};font-size:11px;background:transparent;")
+        self.status_label.setStyleSheet(f"color:{GRAY};background:transparent;")
         ctrl_inner.addWidget(self.status_label)
 
         ctrl_block.content_layout().addLayout(ctrl_inner)
@@ -1244,7 +1425,7 @@ class ScannerPanel(PanelBase):
             fg = DARK if active else ORANGE
             btn.setStyleSheet(
                 f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
+                f"color:{fg};border-radius:4px;font-weight:bold;}}"
                 f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
@@ -1255,7 +1436,7 @@ class ScannerPanel(PanelBase):
             fg = DARK if active else ORANGE
             btn.setStyleSheet(
                 f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
+                f"color:{fg};border-radius:4px;font-weight:bold;}}"
                 f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
@@ -1271,7 +1452,7 @@ class ScannerPanel(PanelBase):
             fg = DARK if active else ORANGE
             b.setStyleSheet(
                 f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
+                f"color:{fg};border-radius:4px;font-weight:bold;}}"
                 f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
@@ -1287,7 +1468,7 @@ class ScannerPanel(PanelBase):
             fg = DARK if active else ORANGE
             b.setStyleSheet(
                 f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
+                f"color:{fg};border-radius:4px;font-weight:bold;}}"
                 f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
@@ -1381,11 +1562,11 @@ class CaptainsLogPanel(PanelBase):
         stats_row = QHBoxLayout()
         stats_row.setSpacing(12)
         self.event_count = QLabel("0 events")
-        self.event_count.setStyleSheet(f"color:{GRAY};font-size:11px;background:transparent;")
+        self.event_count.setStyleSheet(f"color:{GRAY};background:transparent;")
         stats_row.addWidget(self.event_count)
         stats_row.addStretch()
         self.session_time = QLabel("")
-        self.session_time.setStyleSheet(f"color:{GRAY};font-size:11px;background:transparent;")
+        self.session_time.setStyleSheet(f"color:{GRAY};background:transparent;")
         stats_row.addWidget(self.session_time)
         c.addLayout(stats_row)
 
@@ -1658,7 +1839,7 @@ class CaptainsLogPanel(PanelBase):
             fg = DARK if active else ORANGE
             btn.setStyleSheet(
                 f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;font-size:11px;}}"
+                f"color:{fg};border-radius:4px;font-weight:bold;}}"
                 f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
             )
 
@@ -2115,6 +2296,16 @@ _ITEM_NAMES: dict[str, str] = {
     "preengineeredfsd": "Engineered Frame Shift Drive",
     "preengineeredsurfacescanner": "Pre-engineered Detailed Surface Scanner",
 }
+
+
+_CLASS_TO_RATING = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
+
+
+def _module_rating(item: str) -> str:
+    m = re.search(r"_class(\d)", item.lower())
+    if m:
+        return _CLASS_TO_RATING.get(int(m.group(1)), "")
+    return ""
 
 
 def _item_name(item: str) -> str:

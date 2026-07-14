@@ -1,5 +1,8 @@
 # SPECTR — Agent Guide
 
+## Rules
+- **Do NOT commit or push to GitHub unless the user explicitly asks.** Only commit when told to.
+
 ## Project Structure
 - `run` — Bash launcher, sets up .venv, installs PySide6, generates SPECTR.desktop
 - `main.py` — Entry point for `python main.py`
@@ -52,6 +55,8 @@
 - `FUIProgressBar` (alias `HealthBar`) — 10-segment progress bar, green >= 8th, yellow 2nd-7th, red < 2nd
 - `FUIContinuousBar` — Single continuous bar with red/yellow/green position-based coloring
 - `FUIStatusBar` (alias `LcarsStatusBar`) — Top bar: server status left, toggleable game/system clock right
+- `FUIAnnunciator` — Cockpit-style warning light; dim when off, glows amber/red when active
+- `FUIAnnunciatorPanel` — 2-column grid of annunciator lights with key-based access
 
 ## Sidebar / Tab System
 - Sidebar uses FUITab buttons (not QListWidget), manually toggled via `_switch_tab()`
@@ -77,15 +82,16 @@
 |---|---|---|
 | `journal_path` | `""` | Path to ED journal directory |
 | `inara_api_key` | `""` | Used for rank fallback |
-| `inara_app_name` | `"SPECTR"` | Sent to Inara API |
+| `inara_cmdr_name` | `"SPECTR"` | Sent to Inara API |
 | `edsm_api_key` | `""` | Reserved for future EDSM integration |
-| `edsm_app_name` | `"SPECTR"` | Reserved for future EDSM integration |
+| `edsm_cmdr_name` | `"SPECTR"` | Reserved for future EDSM integration |
 | `commander_name` | `""` | Fallback if journal lacks it; used for Inara lookups |
+| `font_size` | `"11"` | Base font size (point size) applied app-wide via QApplication.setFont |
 
 ## Panel Details
 - **DashboardPanel** — `_GalnetWorker` QThread fetches articles; date buttons filter client-side; CGs filtered from same article set and shown in yellow block
 - **CommanderPanel** — 4x2 rank grid with `HealthBar`s, powerplay block (pink), finances block (teal); Inara fallback when journal ranks empty
-- **ShipPanel** — Ship identity, 3 stat boxes (shield/fuel/hull), 2-column module grid with engineering info; Status.json for live fuel/shields
+- **ShipPanel** — Ship identity, 3 stat boxes (shield/fuel/hull) with health bars + value labels; scrollable left/right module grids split by category (CORE/HARDPOINTS/UTILITY left, OPTIONAL right); MFD-style status text per module (OK/LOW/WARN/CRIT + %); annunciator panel (2-column grid, 11 warning lights); Status.json for live fuel/shields/hull
 - **LocationPanel** — System, body, body type, distance from star, station, faction, government, economy, security, population
 - **ScannerPanel** — Long Range Scanner: EDSM API finds nearby stations/carriers with landing pad filtering; radius 25/50/100 LY; ship pad size auto-detected; manual SCAN trigger (no auto-scan on tab switch)
 - **MissionsPanel** — Active table (accepted minus completed/failed/abandoned) + completed/failed table with colored outcome

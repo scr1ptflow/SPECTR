@@ -19,10 +19,11 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 DEFAULT_CONFIG = {
     "journal_path": "",
     "inara_api_key": "",
-    "inara_app_name": "SPECTR",
+    "inara_cmdr_name": "SPECTR",
     "edsm_api_key": "",
-    "edsm_app_name": "SPECTR",
+    "edsm_cmdr_name": "SPECTR",
     "commander_name": "",
+    "font_size": "11",
 }
 
 

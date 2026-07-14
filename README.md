@@ -16,8 +16,8 @@ Creates a virtual environment, installs PySide6, and launches the app. Double-cl
 |-----|---------------|
 | **NEWS** | Galnet articles with day-selector buttons (last 5 days), community goals |
 | **COMMANDER** | Ranks with progress bars, powerplay, credits, rebuy, notoriety. Inara API fallback for rank data |
-| **SHIP** | Ship type/name, shield/fuel/hull health bars, full module loadout with engineering grades |
-| **LOCATION** | Current star system, body, station, faction, government, economy, security, population |
+| **SHIP** | Ship type/name, shield/fuel/hull health bars, scrollable module grids (left: CORE/HARDPOINTS/UTILITY, right: OPTIONAL) with engineering grades and MFD-style status, cockpit annunciator warning lights |
+| **LOCATION** | Current star system, body, station, faction, government, economy, security, population, system map with zoom/pan and body visibility toggles |
 | **SCANNER** | Long Range Scanner — find nearby stations and fleet carriers via EDSM, with landing pad filtering |
 | **MISSIONS** | Active missions vs completed/failed/abandoned outcomes in separate tables |
 | **ENGINEERING** | Materials inventory (Raw/Manufactured/Encoded) with grades; engineer ranks from Inara API |
