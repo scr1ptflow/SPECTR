@@ -17,7 +17,6 @@ import json
 import logging
 import time
 import urllib.request
-from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -56,14 +55,14 @@ class InaraClient:
         self.cmdr_name = cmdr_name
         self.app_name = app_name
         self.app_version = app_version
-        self._profile_cache: Optional[dict] = None
+        self._profile_cache: dict | None = None
         self._cached_cmdr: str = ""
 
     def _timestamp(self) -> str:
         """ISO-8601 timestamp for the API request header."""
         return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    def _request(self, events: list[dict]) -> Optional[dict]:
+    def _request(self, events: list[dict]) -> dict | None:
         """Send a POST request to the Inara API and return the response.
 
         The payload follows the Inara API spec:
@@ -93,7 +92,7 @@ class InaraClient:
             log.warning("Inara API request failed: %s", exc)
             return None
 
-    def get_commander_profile(self) -> Optional[dict]:
+    def get_commander_profile(self) -> dict | None:
         """Fetch the full commander profile from Inara.
 
         Returns the "commander" sub-dict on success, or None on error.
@@ -177,13 +176,13 @@ class InaraClient:
             return []
         return profile.get("commanderAchievements", [])
 
-    def get_squadron(self) -> Optional[dict]:
+    def get_squadron(self) -> dict | None:
         profile = self.get_commander_profile()
         if not profile:
             return None
         return profile.get("commanderSquadron")
 
-    def get_credits(self) -> Optional[int]:
+    def get_credits(self) -> int | None:
         profile = self.get_commander_profile()
         if not profile:
             return None

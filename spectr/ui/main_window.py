@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
 )
 
 from spectr.config import load_config
+from spectr.edsm import EDSMClient
 from spectr.journal import JournalReader
 from spectr.server_status import ServerStatusChecker
 from spectr.ui.panels import (
@@ -30,16 +31,16 @@ _STATUS_COLOR = {
 }
 
 TAB_ITEMS = [
-    ("dashboard",    "NEWS",         ORANGE),
+    ("dashboard",    "NEWS",         CYAN),
     ("commander",    "COMMANDER",    ORANGE),
-    ("ship",         "SHIP",         ORANGE),
-    ("location",     "LOCATION",     ORANGE),
-    ("scanner",      "SCANNER",      ORANGE),
-    ("missions",     "MISSIONS",     ORANGE),
-    ("engineering",  "ENGINEERING",  ORANGE),
-    ("laboratory",   "LABORATORY",   ORANGE),
-    ("settings",     "SETTINGS",     ORANGE),
-    ("captainslog",  "LOG",          ORANGE),
+    ("ship",         "SHIP",         BLUE),
+    ("location",     "LOCATION",     PURPLE),
+    ("scanner",      "SCANNER",      CYAN),
+    ("missions",     "MISSIONS",     TEAL),
+    ("engineering",  "ENGINEERING",  GREEN),
+    ("laboratory",   "LABORATORY",   YELLOW),
+    ("settings",     "SETTINGS",     GRAY),
+    ("captainslog",  "LOG",          PINK),
 ]
 
 TAB_PANELS = {
@@ -65,6 +66,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.config = load_config()
         self.journal = JournalReader(self.config.get("journal_path", ""))
+        self.edsm = EDSMClient()
         self._server_status = "UNKNOWN"
         self._current_tab = "dashboard"
         self._settings = QSettings("SPECTR", "SPECTR")

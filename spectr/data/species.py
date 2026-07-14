@@ -17,8 +17,6 @@ SPECIES_BY_NAME lookup index for case-insensitive searching.
 
 from __future__ import annotations
 
-from typing import Optional
-
 
 class SpeciesInfo:
     """Metadata for a single exobiology species.
@@ -289,7 +287,7 @@ for s in SPECIES.values():
 
 # -- Public API -----------------------------------------------------
 
-def lookup(name: str) -> Optional[SpeciesInfo]:
+def lookup(name: str) -> SpeciesInfo | None:
     """Look up a species by full name (case-insensitive)."""
     return SPECIES_BY_NAME.get(name.lower().strip())
 

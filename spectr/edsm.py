@@ -4,7 +4,6 @@ import json
 import logging
 import urllib.request
 import urllib.parse
-from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class EDSMClient:
         self.api_key = api_key
         self._cache: dict = {}
 
-    def _get(self, path: str, params: dict | None = None) -> Optional[dict]:
+    def _get(self, path: str, params: dict | None = None) -> dict | None:
         url = f"{BASE_URL}{path}"
         if params:
             url = f"{url}?{urllib.parse.urlencode(params)}"
@@ -66,7 +65,7 @@ class EDSMClient:
             return []
         return data.get("stations", [])
 
-    def get_system_details(self, system_name: str) -> Optional[dict]:
+    def get_system_details(self, system_name: str) -> dict | None:
         """Get full system details including bodies."""
         data = self._get(
             "/api-system-v1/bodies",

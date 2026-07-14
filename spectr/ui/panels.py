@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QTextBrowser, QVBoxLayout, QWidget, QScrollArea,
 )
 
-from spectr.config import save_config, validate_config
+from spectr.config import save_config, validate_config, DEFAULT_CONFIG
 from spectr.edsm import EDSMClient, get_pad_size, pad_compatible
 from spectr.galnet import GalnetFetcher
 from spectr.inara import InaraClient
@@ -24,6 +24,29 @@ from spectr.ui.widgets import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def _clear_layout(layout) -> None:
+    """Recursively remove all widgets and sub-layouts from *layout*."""
+    while layout.count():
+        item = layout.takeAt(0)
+        w = item.widget()
+        if w:
+            w.deleteLater()
+        sub = item.layout()
+        if sub:
+            _clear_layout(sub)
+
+
+def _toggle_btn_style(active: bool) -> str:
+    """Return a QPushButton stylesheet for active/inactive toggle state."""
+    bg = ORANGE if active else "transparent"
+    fg = DARK if active else ORANGE
+    return (
+        f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
+        f"color:{fg};border-radius:4px;font-weight:bold;}}"
+        f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
+    )
 
 
 def _table_style(color: str) -> str:
@@ -54,14 +77,14 @@ class _BodiesWorker(QThread):
     """Fetch system bodies from EDSM API."""
     done = Signal(list)
 
-    def __init__(self, system: str, parent=None):
+    def __init__(self, system: str, edsm: EDSMClient, parent=None):
         super().__init__(parent)
         self.system = system
+        self._edsm = edsm
 
     def run(self):
         try:
-            client = EDSMClient()
-            data = client.get_system_details(self.system)
+            data = self._edsm.get_system_details(self.system)
             if data and isinstance(data, dict):
                 raw_bodies = data.get("bodies", [])
                 self.done.emit([_normalize_edsm_body(b) for b in raw_bodies])
@@ -157,6 +180,15 @@ class PanelBase(QWidget):
     def content_layout(self) -> QVBoxLayout:
         return self._content
 
+    def _stop_worker(self, attr: str = "_worker") -> None:
+        """Gracefully stop a running QThread worker before replacing it."""
+        old = getattr(self, attr, None)
+        if old is not None:
+            old.done.disconnect()
+            old.quit()
+            old.wait(2000)
+        setattr(self, attr, None)
+
     def refresh(self) -> None:
         pass
 
@@ -200,6 +232,7 @@ class DashboardPanel(PanelBase):
         self.article_view.setPlainText("Loading galnet feed...")
         self.cg_content.setText("Loading community goals...")
 
+        self._stop_worker()
         self._worker = _GalnetWorker(self)
         self._worker.done.connect(self._on_articles_loaded)
         self._worker.start()
@@ -252,13 +285,7 @@ class DashboardPanel(PanelBase):
         self._active_btn = None
         for i, btn in enumerate(self.date_btns):
             active = i == index
-            bg = ORANGE if active else "transparent"
-            fg = DARK if active else ORANGE
-            btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;}}"
-                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
-            )
+            btn.setStyleSheet(_toggle_btn_style(active))
             if active:
                 self._active_btn = btn
 
@@ -295,6 +322,7 @@ class CommanderPanel(PanelBase):
         self._rank_names: dict[str, QLabel] = {}
         self._rank_bars: dict[str, HealthBar] = {}
         self._finance_labels: dict[str, QLabel] = {}
+        self._inara_client: InaraClient | None = None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -403,7 +431,7 @@ class CommanderPanel(PanelBase):
             self._rank_bars[cat].set_value(pct)
 
         pp = journal.get_powerplay()
-        self._clear_layout(self.pp_inner)
+        _clear_layout(self.pp_inner)
         if pp:
             lbl = QLabel(f"<b>{pp['power'] or 'Powerplay'}</b>")
             lbl.setStyleSheet(f"color:{WHITE};background:transparent;")
@@ -430,21 +458,14 @@ class CommanderPanel(PanelBase):
         cmdr = config.get("commander_name", "")
         if not api_key or not cmdr:
             return None
-        return InaraClient(
+        if self._inara_client and self._inara_client.api_key == api_key and self._inara_client.cmdr_name == cmdr:
+            return self._inara_client
+        self._inara_client = InaraClient(
             api_key=api_key,
             cmdr_name=cmdr,
             app_name=config.get("inara_cmdr_name", "SPECTR"),
         )
-
-    def _clear_layout(self, layout):
-        while layout.count():
-            item = layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-            sub = item.layout()
-            if sub:
-                self._clear_layout(sub)
+        return self._inara_client
 
 
 class ShipPanel(PanelBase):
@@ -842,7 +863,7 @@ class LocationPanel(PanelBase):
         self._update_body_info()
 
     def _update_body_info(self) -> None:
-        self._clear_layout(self._body_inner)
+        _clear_layout(self._body_inner)
         self._body_labels.clear()
 
         if not self._selected_body:
@@ -924,16 +945,6 @@ class LocationPanel(PanelBase):
 
         self._body_inner.addStretch()
 
-    def _clear_layout(self, layout):
-        while layout.count():
-            item = layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-            sub = item.layout()
-            if sub:
-                self._clear_layout(sub)
-
     def refresh(self) -> None:
         journal = self.window.journal
         info = journal.get_system_info()
@@ -942,7 +953,8 @@ class LocationPanel(PanelBase):
 
         system = info.get("system", "")
         if not self._bodies and system:
-            self._bodies_worker = _BodiesWorker(system, self)
+            self._stop_worker("_bodies_worker")
+            self._bodies_worker = _BodiesWorker(system, self.window.edsm, self)
             self._bodies_worker.done.connect(self._on_bodies_from_edsm)
             self._bodies_worker.start()
 
@@ -1072,8 +1084,9 @@ class MissionsPanel(PanelBase):
 
         outcomes: list[tuple[str, str, str, str]] = []
         for ev in journal.get_all_events("MissionCompleted"):
+            reward = ev.get("Reward")
             outcomes.append((ev.timestamp, ev.get("Name", ""), "Completed",
-                             str(ev.get("Reward", 0)) if ev.get("Reward") else ""))
+                             str(reward) if reward is not None else ""))
         for ev in journal.get_all_events("MissionFailed"):
             outcomes.append((ev.timestamp, ev.get("Name", ""), "Failed", ""))
         for ev in journal.get_all_events("MissionAbandoned"):
@@ -1209,8 +1222,6 @@ class SettingsPanel(PanelBase):
         config = self.window.config
         for key, inp in self._inputs.items():
             val = config.get(key, "")
-            if inp.placeholderText() in ("SPECTR", "11") and not val:
-                val = inp.placeholderText()
             inp.setText(val)
 
     def _on_save(self):
@@ -1227,7 +1238,6 @@ class SettingsPanel(PanelBase):
             self.status_label.setText("Settings saved successfully.")
 
         save_config(new_config)
-        from spectr.config import DEFAULT_CONFIG
         self.window.config = {**DEFAULT_CONFIG, **new_config}
         self.window.journal.set_path(new_config.get("journal_path", ""))
         self.window.apply_font_size()
@@ -1237,18 +1247,18 @@ class _ScannerWorker(QThread):
     """Search nearby systems for stations using EDSM API."""
     done = Signal(list)
 
-    def __init__(self, system: str, ship_type: str, radius: int, mode: str, parent=None):
+    def __init__(self, system: str, ship_type: str, radius: int, mode: str, edsm: EDSMClient, parent=None):
         super().__init__(parent)
         self.system = system
         self.ship_type = ship_type
         self.radius = radius
         self.mode = mode
+        self._edsm = edsm
 
     def run(self):
         try:
-            client = EDSMClient()
             pad_size = get_pad_size(self.ship_type)
-            nearby = client.get_nearby_systems(self.system, self.radius, 200)
+            nearby = self._edsm.get_nearby_systems(self.system, self.radius, 200)
 
             results = []
             for sys_data in nearby[:50]:
@@ -1257,7 +1267,7 @@ class _ScannerWorker(QThread):
                 if not sys_name or sys_name == self.system:
                     continue
 
-                stations = client.get_stations(sys_name)
+                stations = self._edsm.get_stations(sys_name)
                 for st in stations:
                     name = st.get("name", "")
                     st_type = st.get("type", "")
@@ -1408,7 +1418,8 @@ class ScannerPanel(PanelBase):
         journal = self.window.journal
 
         ship_type = journal.get_ship_type() or "Unknown"
-        pad = get_pad_size(self.window.journal.get_latest_event("Loadout").get("Ship", "") if journal.get_latest_event("Loadout") else "")
+        loadout = journal.get_latest_event("Loadout")
+        pad = get_pad_size(loadout.get("Ship", "") if loadout else "")
         pad_label = {"S": "Small", "M": "Medium", "L": "Large"}.get(pad, "Unknown")
         system = journal.get_current_system() or "Unknown"
 
@@ -1420,25 +1431,11 @@ class ScannerPanel(PanelBase):
 
         for btn in self.radius_btns:
             r = btn.property("radius")
-            active = r == 50
-            bg = ORANGE if active else "transparent"
-            fg = DARK if active else ORANGE
-            btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;}}"
-                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
-            )
+            btn.setStyleSheet(_toggle_btn_style(r == 50))
 
         for btn in self.mode_btns:
             m = btn.property("mode")
-            active = m == self._mode
-            bg = ORANGE if active else "transparent"
-            fg = DARK if active else ORANGE
-            btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;}}"
-                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
-            )
+            btn.setStyleSheet(_toggle_btn_style(m == self._mode))
 
     def _on_radius_click(self):
         btn = self.sender()
@@ -1446,15 +1443,7 @@ class ScannerPanel(PanelBase):
             return
         self._selected_radius = btn.property("radius")
         for b in self.radius_btns:
-            br = b.property("radius")
-            active = br == self._selected_radius
-            bg = ORANGE if active else "transparent"
-            fg = DARK if active else ORANGE
-            b.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;}}"
-                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
-            )
+            b.setStyleSheet(_toggle_btn_style(b.property("radius") == self._selected_radius))
 
     def _on_mode_click(self):
         btn = self.sender()
@@ -1462,15 +1451,7 @@ class ScannerPanel(PanelBase):
             return
         self._mode = btn.property("mode")
         for b in self.mode_btns:
-            m = b.property("mode")
-            active = m == self._mode
-            bg = ORANGE if active else "transparent"
-            fg = DARK if active else ORANGE
-            b.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;}}"
-                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
-            )
+            b.setStyleSheet(_toggle_btn_style(b.property("mode") == self._mode))
 
     def _start_scan(self):
         system = self.window.journal.get_current_system()
@@ -1486,7 +1467,8 @@ class ScannerPanel(PanelBase):
         self.status_label.setText(f"Scanning {radius} LY radius...")
         self.scan_btn.setEnabled(False)
 
-        self._worker = _ScannerWorker(system, ship, radius, self._mode, self)
+        self._stop_worker()
+        self._worker = _ScannerWorker(system, ship, radius, self._mode, self.window.edsm, self)
         self._worker.done.connect(self._on_scan_done)
         self._worker.start()
 
@@ -1834,14 +1816,7 @@ class CaptainsLogPanel(PanelBase):
     def _highlight_filter(self):
         for btn in self.filter_btns:
             f = btn.property("filter")
-            active = f == self._filter
-            bg = ORANGE if active else "transparent"
-            fg = DARK if active else ORANGE
-            btn.setStyleSheet(
-                f"QPushButton{{background:{bg};border:1px solid {ORANGE};"
-                f"color:{fg};border-radius:4px;font-weight:bold;}}"
-                f"QPushButton:hover{{background:{ORANGE};color:{DARK};}}"
-            )
+            btn.setStyleSheet(_toggle_btn_style(f == self._filter))
 
 
 class EngineeringPanel(PanelBase):
@@ -1931,6 +1906,7 @@ class EngineeringPanel(PanelBase):
         self._fill_graded_table(self.enc_table, enc_mats)
 
         self.eng_status.setText("Loading engineer data from Inara...")
+        self._stop_worker()
         self._worker = _EngineerWorker(config, self)
         self._worker.done.connect(self._on_engineers_loaded)
         self._worker.start()

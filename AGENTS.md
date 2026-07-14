@@ -17,13 +17,13 @@
 - `spectr/data/species.py` — Exobiology species database (86 species across 14 genera), `base_value()` / `lookup()` / `total_value()` API
 - `spectr/data/icon.svg` — FUI-style app icon
 - `spectr/ui/main_window.py` — MainWindow (QMainWindow) with FUITab sidebar + QStackedWidget, tab registry, server status integration, window state persistence via QSettings
-- `spectr/ui/panels.py` — 10 PanelBase subclasses + 3 QThread workers. Network fetches (Galnet, Scanner, Engineers) use QThread subclasses with signals to keep UI responsive. Shared `_table_style()` helper for consistent table styling.
-- `spectr/ui/widgets.py` — All FUI custom widgets: FUIBar, FUIPanel, FUITab, FUIButton, FUIProgressBar, FUIContinuousBar, FUIStatusBar. Backward-compatible aliases (LcarsBlock, LcarsTab, etc.)
+- `spectr/ui/panels.py` — 10 PanelBase subclasses + 3 QThread workers. Network fetches (Galnet, Scanner, Engineers) use QThread subclasses with signals to keep UI responsive. Shared `_table_style()` and `_toggle_btn_style()` helpers. Module-level `_clear_layout()` utility.
+- `spectr/ui/widgets.py` — All FUI custom widgets: FUIBar, FUIPanel, FUITab, FUIButton, FUIProgressBar, FUIStatusBar. Backward-compatible aliases (LcarsBlock, LcarsTab, etc.)
 
 ## Conventions
 - Panel classes extend `PanelBase(QWidget)`, placed in `panels.py`
 - Each panel is registered in `TAB_PANELS` dict (class) and `TAB_ITEMS` list (id, label, colour) in `main_window.py`
-- Panels access shared state via `self.window.journal` / `self.window.config`
+- Panels access shared state via `self.window.journal` / `self.window.config` / `self.window.edsm`
 - Panels define `refresh()` called each time the tab becomes visible
 - All UI code uses PySide6 (Qt for Python)
 - Network fetches (Galnet, Community Goals) use `QThread` subclasses with signals to keep UI responsive
@@ -43,7 +43,7 @@
 - **Exobiology** — `JournalReader.get_organic_summary()` single-pass aggregates ScanOrganic + SellOrganicData across all journal files
 - **Missions** — Active missions (MissionAccepted minus completed/failed/abandoned) and completed/failed/abandoned outcomes shown separately
 - **Location** — System, body, body type, distance from star, station, faction, government, economy, security, population
-- **Ship** — Module data includes engineering grade/experimental display; Status.json read cross-platform
+- **Ship** — Module data includes engineering grade/experimental display; Status.json read cross-platform; shared EDSM client via `window.edsm`
 - **InaraClient** — Uses `header` block with `appName`/`appVersion`/`APIkey`/`commanderName`, events with `eventName`/`eventTimestamp`/`eventData`. Endpoint: `https://inara.cz/inapi/v1/`
 - **EDSMClient** — Uses EDSM REST API for nearby systems and stations; ship landing pad size mapping (S/M/L); pad compatibility checks
 

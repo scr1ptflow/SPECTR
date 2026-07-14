@@ -41,6 +41,8 @@ class ServerStatusChecker(QObject):
 
     def check(self) -> None:
         """Fire async HEAD requests to auth and game servers."""
+        if self._count > 0:
+            return
         self._count = 0
         self._results = {}
         for key, url in [("auth", self._AUTH_URL), ("game", self._GAME_URL)]:

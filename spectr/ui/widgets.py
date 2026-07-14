@@ -57,13 +57,13 @@ class FUIPanel(QFrame):
 
     def __init__(self, title: str = "", color: str = CYAN, parent=None):
         super().__init__(parent)
-        self._accent = QColor(color)
         self._border_color = QColor(color)
         self._border_color.setAlpha(60)
 
+        bc = self._border_color
         self.setStyleSheet(
             f"background:rgba(0,0,0,180);"
-            f"border:1px solid rgba(255,102,0,40);"
+            f"border:1px solid rgba({bc.red()},{bc.green()},{bc.blue()},40);"
         )
 
         outer = QVBoxLayout(self)
@@ -96,12 +96,6 @@ class FUIPanel(QFrame):
 
     def content_layout(self) -> QVBoxLayout:
         return self._content
-
-    def set_accent(self, color: str):
-        self._accent = QColor(color)
-        self._border_color = QColor(color)
-        self._border_color.setAlpha(60)
-        self.update()
 
 
 class FUITab(QPushButton):
@@ -345,48 +339,6 @@ class FUIProgressBar(QWidget):
                 c = QColor(255, 102, 0)
             p.fillRect(sx, sy, seg_w, sh, c)
 
-
-class FUIContinuousBar(QWidget):
-    """Single continuous bar with orange fill."""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._value = 1.0
-        self.setFixedHeight(10)
-        self.setMinimumWidth(80)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
-    def set_value(self, value: float) -> None:
-        self._value = max(0.0, min(1.0, value))
-        self.update()
-
-    def paintEvent(self, event) -> None:
-        p = QPainter(self)
-        r = self.rect()
-
-        w = r.width()
-        fill_w = int(w * self._value)
-        y = r.y() + 1
-        h = r.height() - 2
-
-        if fill_w < w:
-            p.fillRect(r.x() + fill_w, y, w - fill_w, h, QColor(8, 8, 8))
-
-        if fill_w > 0:
-            r_end = int(w * 0.30)
-            g_start = int(w * 0.80)
-
-            rw = min(r_end, fill_w)
-            if rw > 0:
-                p.fillRect(r.x(), y, rw, h, QColor(102, 51, 0))
-            if fill_w > r_end:
-                yw = min(g_start, fill_w) - r_end
-                if yw > 0:
-                    p.fillRect(r.x() + r_end, y, yw, h, QColor(204, 82, 0))
-            if fill_w > g_start:
-                gw = fill_w - g_start
-                if gw > 0:
-                    p.fillRect(r.x() + g_start, y, gw, h, QColor(255, 102, 0))
 
 
 _STAR_COLORS: dict[str, str] = {
@@ -715,18 +667,15 @@ class FUIAnnunciator(QWidget):
         self._label = label.upper()
         self._active = False
         self._color = QColor(ORANGE)
-        self._flash = False
         self.setFixedSize(52, 26)
 
     def set_warning(self, color: str = ORANGE, flash: bool = False) -> None:
         self._active = True
         self._color = QColor(color)
-        self._flash = flash
         self.update()
 
     def clear(self) -> None:
         self._active = False
-        self._flash = False
         self.update()
 
     def paintEvent(self, event) -> None:

@@ -26,9 +26,10 @@ Creates a virtual environment, installs PySide6, and launches the app. Double-cl
 | **SETTINGS** | Journal path, commander name, Inara/EDSM API keys, journal validation |
 
 ### FUI Interface
-- Custom-painted side tab navigation with per-tab accent colours
+- Custom-painted side tab navigation with per-tab accent colours (CYAN/ORANGE/BLUE/PURPLE/TEAL/YELLOW/RED/PINK/GREEN/GRAY)
 - Data frames with coloured left accent rails
 - Colour-thresholded 10-segment health bars (green >= 80%, yellow 20-80%, red < 20%)
+- Cockpit-style annunciator warning lights (2-column grid, glow amber/red when active)
 - Status bar with live server status indicator (ONLINE/OFFLINE/MAINTENANCE)
 - Game time (UTC +1286 years = Elite Dangerous timeline) / local system clock — click to toggle
 - All widgets painted via `QPainter` — no images, pure vector FUI styling

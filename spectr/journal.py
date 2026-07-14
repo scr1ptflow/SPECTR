@@ -18,7 +18,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator
 
 from spectr.data.species import base_value as data_base_value
 
@@ -181,9 +181,8 @@ class JournalReader:
     def __init__(self, journal_path: str = ""):
         # Expand ~ so users can write ~/Saved Games/...
         self.journal_path = Path(journal_path).expanduser() if journal_path else None
-        self._current_file: Optional[Path] = None
-        self._file_cache: Optional[list[Path]] = None
-        self._cache_path: Optional[Path] = None
+        self._file_cache: list[Path] | None = None
+        self._cache_path: Path | None = None
 
     def set_path(self, path: str) -> None:
         """Update the journal directory at runtime (called by SettingsPanel)."""
@@ -209,12 +208,12 @@ class JournalReader:
         self._cache_path = self.journal_path
         return self._file_cache
 
-    def latest_journal(self) -> Optional[Path]:
+    def latest_journal(self) -> Path | None:
         """Return the most recent journal file (highest timestamp)."""
         files = self.find_journal_files()
         return files[0] if files else None
 
-    def read_events(self, filepath: Optional[Path] = None) -> Iterator[JournalEvent]:
+    def read_events(self, filepath: Path | None = None) -> Iterator[JournalEvent]:
         """Yield all events from *filepath* (or the latest journal).
 
         Each line is parsed as JSON; malformed lines are silently skipped.
@@ -237,7 +236,7 @@ class JournalReader:
         for path in self.find_journal_files():
             yield from self.read_events(path)
 
-    def get_latest_event(self, event_type: str) -> Optional[JournalEvent]:
+    def get_latest_event(self, event_type: str) -> JournalEvent | None:
         """Find the most recent occurrence of *event_type* across all journals.
 
         Searches newest journal first and returns the LAST match in that file
@@ -253,6 +252,26 @@ class JournalReader:
                 return result
         return None
 
+    def get_latest_events(self, *event_types: str) -> dict[str, JournalEvent | None]:
+        """Find the most recent occurrence of each event type in a single pass.
+
+        Returns a dict mapping each requested event type to its most recent
+        JournalEvent (or None if not found). Scans journals only once.
+        """
+        wanted = set(event_types)
+        results: dict[str, JournalEvent | None] = {t: None for t in event_types}
+        found: set[str] = set()
+
+        for path in self.find_journal_files():
+            for event in self.read_events(path):
+                if event.event in wanted and event.event not in found:
+                    results[event.event] = event
+                    found.add(event.event)
+            if found == wanted:
+                break
+
+        return results
+
     def get_all_events(self, event_type: str) -> list[JournalEvent]:
         """Return ALL events of *event_type* across all journal files."""
         result: list[JournalEvent] = []
@@ -264,13 +283,13 @@ class JournalReader:
 
     # --- Convenience getters ---
 
-    def get_commander(self) -> Optional[str]:
+    def get_commander(self) -> str | None:
         event = self.get_latest_event("Commander")
         if event:
             return event.get("Name")
         return None
 
-    def get_current_system(self) -> Optional[str]:
+    def get_current_system(self) -> str | None:
         event = self.get_latest_event("Location")
         if event:
             return event.get("StarSystem")
@@ -312,7 +331,7 @@ class JournalReader:
                 }
         return {}
 
-    def get_ship_type(self) -> Optional[str]:
+    def get_ship_type(self) -> str | None:
         event = self.get_latest_event("Loadout")
         if event:
             return resolve_ship_type(event.get("Ship", ""))
@@ -321,7 +340,7 @@ class JournalReader:
             return resolve_ship_type(event.get("Ship", ""))
         return None
 
-    def get_ship_name(self) -> Optional[str]:
+    def get_ship_name(self) -> str | None:
         event = self.get_latest_event("Loadout")
         if event:
             return event.get("ShipName")
@@ -330,7 +349,7 @@ class JournalReader:
             return event.get("ShipName")
         return None
 
-    def get_ship_ident(self) -> Optional[str]:
+    def get_ship_ident(self) -> str | None:
         event = self.get_latest_event("Loadout")
         if event:
             return event.get("ShipIdent")
@@ -339,27 +358,27 @@ class JournalReader:
             return event.get("ShipIdent")
         return None
 
-    def get_credits(self) -> Optional[int]:
+    def get_credits(self) -> int | None:
         event = self.get_latest_event("LoadGame")
         if event:
             return event.get("Credits")
         return None
 
-    def get_squadron(self) -> Optional[str]:
+    def get_squadron(self) -> str | None:
         event = self.get_latest_event("LoadGame")
         if event:
             return event.get("SquadronName")
         return None
 
-    def get_powerplay(self) -> Optional[dict]:
+    def get_powerplay(self) -> dict | None:
         """Merge data from all Powerplay-related events into one dict.
 
         Returns {"power": str, "rank": int, "merits": int} or None if
         no powerplay data exists.
         """
         power = ""
-        rank = 0
-        merits = 0
+        rank = None
+        merits = None
 
         event = self.get_latest_event("Powerplay")
         if event:
@@ -371,9 +390,9 @@ class JournalReader:
         if join_event:
             if not power:
                 power = join_event.get("Power", "")
-            if not rank:
+            if rank is None:
                 rank = join_event.get("Rank", 0)
-            if not merits:
+            if merits is None:
                 merits = join_event.get("Merits", 0)
 
         defect_event = self.get_latest_event("PowerplayDefect")
@@ -388,10 +407,10 @@ class JournalReader:
 
         merits_event = self.get_latest_event("PowerplayMerits")
         if merits_event:
-            merits = max(merits, merits_event.get("TotalMerits", 0))
+            merits = max(merits or 0, merits_event.get("TotalMerits", 0))
 
         if power or rank or merits:
-            return {"power": power, "rank": rank, "merits": merits}
+            return {"power": power, "rank": rank or 0, "merits": merits or 0}
         return None
 
     # --- Ranks ---
@@ -454,7 +473,7 @@ class JournalReader:
             return names[level]
         return str(level)
 
-    def get_rebuy(self) -> Optional[int]:
+    def get_rebuy(self) -> int | None:
         event = self.get_latest_event("Loadout")
         if event:
             return event.get("Rebuy")
