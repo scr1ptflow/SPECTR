@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
@@ -134,6 +135,27 @@ async def get_intelligence(request: Request) -> JSONResponse:
     return JSONResponse(report.to_dict())
 
 
+async def get_settings(request: Request) -> JSONResponse:
+    """GET /api/v1/settings — current application settings."""
+    from bridge_core.config import Settings
+    settings: Settings | None = getattr(request.app.state, "settings", None)
+    if not settings:
+        return JSONResponse({"error": "Settings not loaded"}, status_code=500)
+    return JSONResponse(settings.get_all())
+
+
+async def update_settings(request: Request) -> JSONResponse:
+    """PUT /api/v1/settings — update application settings and persist."""
+    from bridge_core.config import Settings
+    settings: Settings | None = getattr(request.app.state, "settings", None)
+    if not settings:
+        return JSONResponse({"error": "Settings not loaded"}, status_code=500)
+    body = await request.json()
+    settings.update(body)
+    settings.save()
+    return JSONResponse(settings.get_all())
+
+
 # ---------------------------------------------------------------------------
 # WebSocket — real-time event stream
 # ---------------------------------------------------------------------------
@@ -213,7 +235,7 @@ class SPAStaticFiles(StaticFiles):
             raise
 
 
-def create_app(state_engine: StateEngine, bus: EventBus) -> Starlette:
+def create_app(state_engine: StateEngine, bus: EventBus, settings: Any = None) -> Starlette:
     """Create the Starlette application with all routes."""
 
     routes = [
@@ -229,6 +251,8 @@ def create_app(state_engine: StateEngine, bus: EventBus) -> Starlette:
         Route("/api/v1/session", get_session, methods=["GET"]),
         Route("/api/v1/archive", get_archive, methods=["GET"]),
         Route("/api/v1/intelligence", get_intelligence, methods=["GET"]),
+        Route("/api/v1/settings", get_settings, methods=["GET"]),
+        Route("/api/v1/settings", update_settings, methods=["PUT"]),
         WebSocketRoute("/ws", websocket_endpoint),
     ]
 
@@ -242,5 +266,6 @@ def create_app(state_engine: StateEngine, bus: EventBus) -> Starlette:
     app.state.bus = bus
     app.state.session_manager = None
     app.state.intelligence_service = None
+    app.state.settings = settings
 
     return app

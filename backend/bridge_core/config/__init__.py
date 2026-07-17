@@ -20,6 +20,8 @@ DEFAULTS = {
     "api_port": 8420,
     "log_level": "INFO",
     "database_path": str(CONFIG_DIR / "bridge.db"),
+    "inara_api_key": "",
+    "edsm_api_key": "",
 }
 
 
@@ -46,6 +48,12 @@ class Settings:
     def get(self, key: str, default=None):
         return self._data.get(key, default)
 
+    def get_all(self) -> dict:
+        return dict(self._data)
+
+    def update(self, data: dict) -> None:
+        self._data.update(data)
+
     def __getitem__(self, key: str):
         return self._data[key]
 
@@ -64,3 +72,11 @@ class Settings:
     @property
     def database_path(self) -> str:
         return self._data["database_path"]
+
+    @property
+    def inara_api_key(self) -> str:
+        return self._data["inara_api_key"]
+
+    @property
+    def edsm_api_key(self) -> str:
+        return self._data["edsm_api_key"]

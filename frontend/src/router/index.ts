@@ -16,6 +16,7 @@ const router = createRouter({
         { path: 'commander', name: 'commander', component: () => import('@/pages/CommanderPage.vue') },
         { path: 'intelligence', name: 'intelligence', component: () => import('@/pages/IntelligencePage.vue') },
         { path: 'archive', name: 'archive', component: () => import('@/pages/ArchivePage.vue') },
+        { path: 'settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
       ],
     },
   ],

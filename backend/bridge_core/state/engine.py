@@ -123,6 +123,42 @@ class EngineeringState:
 
 
 @dataclass
+class BodyInfo:
+    """A single scanned body in the current system."""
+    name: str = ""
+    body_class: str = ""
+    star_type: str = ""
+    distance_ls: float = 0.0
+    radius_km: float = 0.0
+    surface_temp_k: float = 0.0
+    surface_pressure: float = 0.0
+    landable: bool = False
+    terraformable: bool = False
+    volcanicism: str = ""
+    atmosphere: str = ""
+    composition: dict = field(default_factory=dict)
+    ring_type: str = ""
+    reserves: str = ""
+    scanned: bool = False
+    mapped: bool = False
+
+
+@dataclass
+class SystemBodies:
+    """All bodies observed in the current system."""
+    bodies: list[BodyInfo] = field(default_factory=list)
+    star_count: int = 0
+    planet_count: int = 0
+    moon_count: int = 0
+    landable_count: int = 0
+    terraformable_count: int = 0
+    water_world_count: int = 0
+    earthlike_count: int = 0
+    ammonia_count: int = 0
+    gas_giant_count: int = 0
+
+
+@dataclass
 class ScanState:
     bodies_scanned: int = 0
     bodies_detailed: int = 0
@@ -150,6 +186,7 @@ class GameState:
     missions: MissionState = field(default_factory=MissionState)
     engineering: EngineeringState = field(default_factory=EngineeringState)
     scans: ScanState = field(default_factory=ScanState)
+    system_bodies: SystemBodies = field(default_factory=SystemBodies)
     fleet: FleetState = field(default_factory=FleetState)
     notoriety: int = 0
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
@@ -273,9 +310,12 @@ class StateEngine:
         dist = event.data.get("DistFromStarLs", 0)
         if dist:
             self._state.navigation.total_distance_ly += dist
+        # Clear system bodies on entering a new system
+        self._state.system_bodies = SystemBodies()
 
     def _on_carrier_jump(self, event: Event) -> None:
         self._apply_location(event.data)
+        self._state.system_bodies = SystemBodies()
 
     def _apply_location(self, data: dict) -> None:
         loc = self._state.location
@@ -336,6 +376,72 @@ class StateEngine:
 
     def _on_scan(self, event: Event) -> None:
         self._state.scans.bodies_scanned += 1
+        d = event.data
+
+        body = BodyInfo(
+            name=d.get("BodyName", ""),
+            body_class=d.get("BodyClass", ""),
+            star_type=d.get("StarType", ""),
+            distance_ls=d.get("DistanceFromArrivalLs", 0.0),
+            radius_km=d.get("Radius", 0.0) / 1000.0,
+            surface_temp_k=d.get("SurfaceTemperature", 0.0),
+            surface_pressure=d.get("SurfacePressure", 0.0),
+            landable=d.get("Landable", False),
+            terraformable=d.get("TerraformState", "") == "Terraformable",
+            volcanicism=d.get("Volcanism", ""),
+            atmosphere=d.get("Atmosphere", ""),
+            composition=d.get("Composition", {}),
+            ring_type=d.get("RingType", ""),
+            reserves=d.get("Reserves", ""),
+            scanned=True,
+        )
+
+        sb = self._state.system_bodies
+        # Replace if body already exists, otherwise append
+        existing_idx = next(
+            (i for i, b in enumerate(sb.bodies) if b.name == body.name), -1
+        )
+        if existing_idx >= 0:
+            sb.bodies[existing_idx] = body
+        else:
+            sb.bodies.append(body)
+
+        # Update counts
+        self._recount_bodies(sb)
+
+    def _recount_bodies(self, sb: SystemBodies) -> None:
+        """Recompute body category counts from the bodies list."""
+        def _is_star(b: BodyInfo) -> bool:
+            return "star" in b.body_class.lower() or bool(b.star_type)
+
+        def _is_planet(b: BodyInfo) -> bool:
+            return ("planet" in b.body_class.lower()
+                    and "moon" not in b.body_class.lower()
+                    and not b.star_type)
+
+        def _is_water(b: BodyInfo) -> bool:
+            return ("water" in b.body_class.lower()
+                    and "giant" not in b.body_class.lower())
+
+        sb.star_count = sum(1 for b in sb.bodies if _is_star(b))
+        sb.planet_count = sum(1 for b in sb.bodies if _is_planet(b))
+        sb.moon_count = sum(
+            1 for b in sb.bodies if "moon" in b.body_class.lower()
+        )
+        sb.landable_count = sum(1 for b in sb.bodies if b.landable)
+        sb.terraformable_count = sum(
+            1 for b in sb.bodies if b.terraformable
+        )
+        sb.water_world_count = sum(1 for b in sb.bodies if _is_water(b))
+        sb.earthlike_count = sum(
+            1 for b in sb.bodies if "earthlike" in b.body_class.lower()
+        )
+        sb.ammonia_count = sum(
+            1 for b in sb.bodies if "ammonia" in b.body_class.lower()
+        )
+        sb.gas_giant_count = sum(
+            1 for b in sb.bodies if "gas giant" in b.body_class.lower()
+        )
 
     def _on_scan_organic(self, event: Event) -> None:
         self._state.scans.organic_scans.append(event.data)

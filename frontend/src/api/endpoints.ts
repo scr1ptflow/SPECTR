@@ -73,6 +73,7 @@ export interface GameState {
   missions: { active: any[]; complete: any[]; failed: any[] }
   engineering: { current_modification: string; engineer: string; grade: number; materials: Record<string, number> }
   scans: { bodies_scanned: number; bodies_detailed: number; organic_scans: any[]; organic_sold: Record<string, any>; total_scan_value: number }
+  system_bodies: { bodies: BodyInfo[]; star_count: number; planet_count: number; moon_count: number; landable_count: number; terraformable_count: number; water_world_count: number; earthlike_count: number; ammonia_count: number; gas_giant_count: number }
   notoriety: number
   timestamp: string
   raw_events: number
@@ -126,6 +127,40 @@ export interface CommanderReport extends DepartmentReport {
   }
 }
 
+export interface BodyInfo {
+  name: string
+  body_class: string
+  star_type: string
+  distance_ls: number
+  landable: boolean
+  terraformable: boolean
+  atmosphere: string
+  volcanicism: string
+  surface_temp_k: number
+  scanned: boolean
+  mapped: boolean
+}
+
+export interface BodyCounts {
+  total: number
+  stars: number
+  planets: number
+  moons: number
+  landable: number
+  terraformable: number
+  water_worlds: number
+  earth_like: number
+  ammonia: number
+  gas_giants: number
+}
+
+export interface ThreatAssessment {
+  level: string
+  factors: string[]
+  security: string
+  notoriety: number
+}
+
 export interface NavigationReport extends DepartmentReport {
   details: {
     system: string
@@ -150,6 +185,10 @@ export interface NavigationReport extends DepartmentReport {
     target_system: string
     target_body: string
     route: any[]
+    bodies: BodyInfo[]
+    body_counts: BodyCounts
+    cartographic_estimate: number
+    threat_assessment: ThreatAssessment
   }
   history: {
     jumps: number
@@ -157,6 +196,8 @@ export interface NavigationReport extends DepartmentReport {
     bodies_scanned: number
     bodies_detailed: number
     organic_scans: number
+    system_bodies: number
+    route: any[]
   }
 }
 
@@ -394,4 +435,19 @@ export const archiveApi = {
 
 export const intelligenceApi = {
   get: () => api.get<IntelligenceReport>('/intelligence'),
+}
+
+export interface AppSettings {
+  journal_path: string
+  api_host: string
+  api_port: number
+  log_level: string
+  database_path: string
+  inara_api_key: string
+  edsm_api_key: string
+}
+
+export const settingsApi = {
+  get: () => api.get<AppSettings>('/settings'),
+  update: (data: Partial<AppSettings>) => api.put<AppSettings>('/settings', data),
 }

@@ -48,7 +48,7 @@ async def run(settings: Settings) -> None:
 
     await plugin_mgr.setup_all(bus, state, db)
 
-    app = create_app(state, bus)
+    app = create_app(state, bus, settings)
     app.state.session_manager = session_mgr
 
     config = uvicorn.Config(app, host="127.0.0.1", port=8420, log_level="info")
