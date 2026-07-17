@@ -1,0 +1,37 @@
+entity: Body
+
+owner: Navigation
+
+fields:
+
+  id:
+    type: integer
+
+  name:
+    type: string
+
+  body_type:
+    type: BodyType
+
+  landable:
+    type: boolean
+
+  terraformable:
+    type: boolean
+
+  gravity:
+    type: float
+
+  value:
+    type: integer
+
+  biological_signals:
+    type: integer
+
+events:
+
+  - Scan
+
+  - FSSDiscovery
+
+  - DSSComplete

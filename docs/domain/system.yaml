@@ -1,0 +1,40 @@
+entity: System
+
+owner: Navigation
+
+fields:
+
+  name:
+    type: string
+
+  address:
+    type: integer
+
+  economy:
+    type: string
+
+  security:
+    type: string
+
+  population:
+    type: integer
+
+relationships:
+
+  bodies:
+    type: Body
+    cardinality: many
+
+  stations:
+    type: Station
+    cardinality: many
+
+  carriers:
+    type: Carrier
+    cardinality: many
+
+events:
+
+  - FSDJump
+
+  - LocationChanged

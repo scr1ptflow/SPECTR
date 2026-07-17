@@ -1,0 +1,18 @@
+entity: Alert
+
+fields:
+
+  level:
+    type: AlertLevel
+
+  title:
+    type: string
+
+  message:
+    type: string
+
+  department:
+    type: Department
+
+  created:
+    type: datetime

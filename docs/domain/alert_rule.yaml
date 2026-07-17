@@ -1,0 +1,30 @@
+entity: AlertRule
+
+description: >
+  Defines the conditions that generate an alert.
+
+owner: Intelligence
+
+fields:
+
+  id:
+    type: string
+
+  name:
+    type: string
+
+  enabled:
+    type: boolean
+
+  priority:
+    type: integer
+
+relationships:
+
+  alerts:
+    type: Alert
+    cardinality: many
+
+used_by:
+
+  - Intelligence

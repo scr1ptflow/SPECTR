@@ -1,0 +1,40 @@
+entity: Engineer
+
+description: >
+  Represents a single engineer.
+
+owner: Engineering
+
+fields:
+
+  name:
+    type: string
+
+  system:
+    type: string
+
+  unlocked:
+    type: boolean
+
+  invited:
+    type: boolean
+
+  rank:
+    type: float
+
+  progress:
+    type: percentage
+
+relationships:
+
+  blueprints:
+    type: Blueprint
+    cardinality: many
+
+events:
+
+  - EngineerProgress
+
+used_by:
+
+  - Engineering

@@ -1,0 +1,30 @@
+entity: Blueprint
+
+description: >
+  Engineering blueprint available from an engineer.
+
+owner: Engineering
+
+fields:
+
+  name:
+    type: string
+
+  grade:
+    type: integer
+
+  experimental:
+    type: string
+
+  module_type:
+    type: string
+
+relationships:
+
+  engineer:
+    type: Engineer
+    cardinality: one
+
+used_by:
+
+  - Engineering

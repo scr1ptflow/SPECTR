@@ -1,0 +1,38 @@
+entity: BodyScan
+
+description: >
+  Detailed scan information collected for a celestial body.
+
+owner: Navigation
+
+fields:
+
+  mapped:
+    type: boolean
+
+  first_discovered:
+    type: boolean
+
+  first_mapped:
+    type: boolean
+
+  efficiency_bonus:
+    type: boolean
+
+  estimated_value:
+    type: integer
+
+relationships:
+
+  body:
+    type: Body
+    cardinality: one
+
+events:
+
+  - Scan
+  - SAAScanComplete
+
+used_by:
+
+  - Navigation

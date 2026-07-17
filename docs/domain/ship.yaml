@@ -1,0 +1,65 @@
+entity: Ship
+
+description: >
+  Current active ship.
+
+owner: Engineering
+
+source:
+
+  - LoadGame
+
+  - ModuleInfo
+
+  - Journal
+
+fields:
+
+  id:
+    type: integer
+
+  name:
+    type: string
+
+  ident:
+    type: string
+
+  type:
+    type: ShipType
+
+  hull:
+    type: percentage
+
+  shield:
+    type: percentage
+
+  fuel:
+    type: float
+
+  cargo:
+    type: integer
+
+  jump_range:
+    type: float
+
+relationships:
+
+  modules:
+    type: Module
+    cardinality: many
+
+events:
+
+  - ShipChanged
+
+  - ModuleDamaged
+
+  - Refuel
+
+used_by:
+
+  - Engineering
+
+  - Navigation
+
+  - Bridge

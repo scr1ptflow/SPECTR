@@ -1,0 +1,28 @@
+entity: Rank
+
+description: >
+  Represents one commander rank.
+
+owner: Commander
+
+fields:
+
+  category:
+    type: string
+
+  name:
+    type: string
+
+  level:
+    type: integer
+
+  progress:
+    type: percentage
+
+events:
+
+  - Rank
+
+used_by:
+
+  - Commander

@@ -1,0 +1,19 @@
+entity: Service
+
+description: >
+  A service provided by a station or fleet carrier.
+
+owner: Navigation
+
+fields:
+
+  name:
+    type: string
+
+  available:
+    type: boolean
+
+used_by:
+
+  - Station
+  - Carrier

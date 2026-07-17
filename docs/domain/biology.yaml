@@ -1,0 +1,26 @@
+entity: BiologySample
+
+owner: Laboratory
+
+fields:
+
+  species:
+    type: string
+
+  genus:
+    type: string
+
+  planet:
+    type: string
+
+  value:
+    type: integer
+
+  completed:
+    type: boolean
+
+events:
+
+  - ScanOrganic
+
+  - SellOrganicData

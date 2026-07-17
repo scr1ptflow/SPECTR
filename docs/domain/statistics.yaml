@@ -1,0 +1,21 @@
+entity: Statistics
+
+fields:
+
+  total_distance:
+    type: float
+
+  total_jumps:
+    type: integer
+
+  total_credits:
+    type: integer
+
+  systems_visited:
+    type: integer
+
+  planets_scanned:
+    type: integer
+
+  exobiology_value:
+    type: integer

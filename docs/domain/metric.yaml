@@ -1,0 +1,33 @@
+entity: Metric
+
+description: >
+  A standardized value displayed inside reports.
+
+owner: Bridge
+
+fields:
+
+  name:
+    type: string
+
+  value:
+    type: any
+
+  unit:
+    type: string
+
+  icon:
+    type: string
+
+  status:
+    type: StatusLevel
+
+relationships:
+
+  report:
+    type: Report
+    cardinality: one
+
+used_by:
+
+  - All Departments

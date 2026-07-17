@@ -1,0 +1,35 @@
+entity: Powerplay
+
+description: >
+  Represents the commander's current Powerplay status.
+
+owner: Commander
+
+fields:
+
+  power:
+    type: string
+
+  rank:
+    type: integer
+
+  merits:
+    type: integer
+
+  salary:
+    type: integer
+
+  pledged:
+    type: boolean
+
+events:
+
+  - Powerplay
+  - PowerplayCollect
+  - PowerplayDefect
+  - PowerplayJoin
+  - PowerplayLeave
+
+used_by:
+
+  - Commander

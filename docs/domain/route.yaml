@@ -1,0 +1,39 @@
+entity: Route
+
+description: >
+  Represents the current plotted route.
+
+owner: Navigation
+
+fields:
+
+  destination:
+    type: string
+
+  remaining_jumps:
+    type: integer
+
+  total_distance:
+    type: float
+
+  fuel_required:
+    type: float
+
+  neutron_boosts:
+    type: integer
+
+relationships:
+
+  systems:
+    type: System
+    cardinality: many
+
+events:
+
+  - NavRoute
+  - FSDJump
+
+used_by:
+
+  - Navigation
+  - Bridge

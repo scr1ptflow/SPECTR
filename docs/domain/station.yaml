@@ -1,0 +1,23 @@
+entity: Station
+
+owner: Navigation
+
+fields:
+
+  name:
+    type: string
+
+  type:
+    type: string
+
+  distance_ls:
+    type: float
+
+  services:
+    type: string[]
+
+events:
+
+  - Docked
+
+  - Undocked

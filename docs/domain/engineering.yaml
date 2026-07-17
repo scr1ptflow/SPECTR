@@ -1,0 +1,50 @@
+entity: Engineering
+
+description: >
+  Represents engineering modifications applied to ship modules and
+  the commander's engineering progression.
+
+owner: Engineering
+
+source:
+  - EngineerProgress
+  - ModuleInfo
+  - Journal
+
+fields:
+
+  engineers:
+    type: Engineer[]
+
+  pinned_blueprint:
+    type: Blueprint
+
+  remote_workshop:
+    type: boolean
+
+relationships:
+
+  ship:
+    type: Ship
+    cardinality: one
+
+  modules:
+    type: Module
+    cardinality: many
+
+events:
+
+  - EngineerProgress
+  - EngineerCraft
+  - EngineerLegacyConvert
+  - ModuleEngineered
+
+used_by:
+
+  - Engineering
+  - Commander
+
+notes:
+  Engineering data is separate from module data.
+  Modules reference their engineering modification, while this entity
+  tracks the overall engineering state of the commander.

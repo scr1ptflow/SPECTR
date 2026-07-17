@@ -1,0 +1,21 @@
+entity: Expedition
+
+fields:
+
+  start_system:
+    type: string
+
+  end_system:
+    type: string
+
+  duration:
+    type: duration
+
+  discoveries:
+    type: integer
+
+  biological_samples:
+    type: integer
+
+  estimated_value:
+    type: integer

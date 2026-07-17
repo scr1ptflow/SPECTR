@@ -1,0 +1,47 @@
+status_levels:
+  - GREEN
+  - BLUE
+  - YELLOW
+  - ORANGE
+  - RED
+
+departments:
+  - bridge
+  - navigation
+  - engineering
+  - laboratory
+  - operations
+  - tactical
+  - commander
+  - communications
+  - archive
+  - intelligence
+
+body_types:
+  - star
+  - planet
+  - moon
+  - asteroid
+  - belt_cluster
+  - ring
+
+star_classes:
+  - O
+  - B
+  - A
+  - F
+  - G
+  - K
+  - M
+  - L
+  - T
+  - Y
+  - WhiteDwarf
+  - Neutron
+  - BlackHole
+
+alert_levels:
+  - info
+  - warning
+  - danger
+  - critical

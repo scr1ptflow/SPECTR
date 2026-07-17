@@ -1,0 +1,33 @@
+entity: Faction
+
+description: >
+  Represents a local or major faction.
+
+owner: Commander
+
+fields:
+
+  name:
+    type: string
+
+  allegiance:
+    type: string
+
+  government:
+    type: string
+
+  influence:
+    type: percentage
+
+  reputation:
+    type: string
+
+events:
+
+  - FactionKillBond
+  - Reputation
+
+used_by:
+
+  - Commander
+  - Navigation

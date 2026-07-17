@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elite-bridge-core"
+version = "0.1.0"
+description = "Elite Bridge Core — starship operating system backend for Elite Dangerous"
+requires-python = ">=3.11"
+dependencies = [
+    "watchfiles>=0.21",
+    "uvicorn>=0.27",
+    "starlette>=0.36",
+    "websockets>=12.0",
+    "aiosqlite>=0.19",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["bridge_core"]
+
+[project.scripts]
+elite-bridge = "bridge_core.main:main"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

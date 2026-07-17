@@ -1,0 +1,15 @@
+entity: Recommendation
+
+fields:
+
+  priority:
+    type: integer
+
+  message:
+    type: string
+
+  reason:
+    type: string
+
+  action:
+    type: string

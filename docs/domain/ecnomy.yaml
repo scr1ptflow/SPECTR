@@ -1,0 +1,19 @@
+entity: Economy
+
+description: >
+  Represents an economy present in a star system or station.
+
+owner: Navigation
+
+fields:
+
+  name:
+    type: string
+
+  proportion:
+    type: percentage
+
+used_by:
+
+  - System
+  - Station

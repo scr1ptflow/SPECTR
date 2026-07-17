@@ -1,0 +1,29 @@
+entity: Module
+
+owner: Engineering
+
+fields:
+
+  slot:
+    type: string
+
+  name:
+    type: string
+
+  health:
+    type: percentage
+
+  powered:
+    type: boolean
+
+  priority:
+    type: integer
+
+  engineering:
+    type: EngineeringModification
+
+events:
+
+  - ModuleDamaged
+
+  - ModuleRepaired

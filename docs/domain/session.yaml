@@ -1,0 +1,21 @@
+entity: Session
+
+fields:
+
+  start:
+    type: datetime
+
+  end:
+    type: datetime
+
+  credits:
+    type: integer
+
+  systems:
+    type: integer
+
+  jumps:
+    type: integer
+
+  distance:
+    type: float

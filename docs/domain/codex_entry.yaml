@@ -1,0 +1,29 @@
+entity: CodexEntry
+
+description: >
+  Represents a Codex discovery.
+
+owner: Laboratory
+
+fields:
+
+  category:
+    type: string
+
+  subcategory:
+    type: string
+
+  name:
+    type: string
+
+  discovered:
+    type: boolean
+
+events:
+
+  - CodexEntry
+
+used_by:
+
+  - Laboratory
+  - Archive

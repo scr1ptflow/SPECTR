@@ -1,0 +1,65 @@
+entity: Carrier
+
+description: >
+  Represents a Fleet Carrier detected in the current system.
+
+owner: Navigation
+
+source:
+  - CarrierJump
+  - FSSDiscovery
+  - Docked
+  - Journal
+
+fields:
+
+  callsign:
+    type: string
+
+  name:
+    type: string
+
+  owner:
+    type: string
+
+  system:
+    type: string
+
+  distance_ls:
+    type: float
+
+  docking_access:
+    type: string
+
+  services:
+    type: string[]
+
+  market:
+    type: boolean
+
+  shipyard:
+    type: boolean
+
+  outfitting:
+    type: boolean
+
+relationships:
+
+  system:
+    type: System
+    cardinality: one
+
+events:
+
+  - CarrierJump
+  - CarrierDockingPermissionChanged
+  - CarrierStats
+
+used_by:
+
+  - Navigation
+  - Bridge
+
+notes:
+  Carriers are treated similarly to stations but remain independent
+  because they move between systems and expose additional services.

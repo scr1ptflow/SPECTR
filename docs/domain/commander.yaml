@@ -1,0 +1,50 @@
+entity: Commander
+
+description: >
+  Represents the player.
+
+owner: Commander
+
+source:
+  - LoadGame
+  - Rank
+  - Progress
+  - Statistics
+
+fields:
+
+  name:
+    type: string
+
+  credits:
+    type: integer
+
+  rebuy:
+    type: integer
+
+  ranks:
+    type: Rank[]
+
+  reputation:
+    type: Reputation[]
+
+  powerplay:
+    type: Powerplay
+
+  current_ship:
+    type: Ship
+
+relationships:
+
+  ship:
+    type: Ship
+    cardinality: one
+
+events:
+
+  - CommanderUpdated
+
+used_by:
+
+  - Commander
+  - Bridge

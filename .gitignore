@@ -1,4 +1,39 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
 .venv/
-SPECTR.desktop
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Elite Bridge
+*.db
+*.log
+
+# Tauri / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/target/
+backend/bridge_core/static/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

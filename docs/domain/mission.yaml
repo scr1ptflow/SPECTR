@@ -1,0 +1,39 @@
+entity: Mission
+
+owner: Operations
+
+fields:
+
+  id:
+    type: integer
+
+  title:
+    type: string
+
+  type:
+    type: string
+
+  destination:
+    type: string
+
+  reward:
+    type: integer
+
+  expiration:
+    type: datetime
+
+status:
+
+  - Active
+
+  - Completed
+
+  - Failed
+
+events:
+
+  - MissionAccepted
+
+  - MissionCompleted
+
+  - MissionFailed

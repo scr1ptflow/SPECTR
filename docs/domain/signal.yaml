@@ -1,0 +1,36 @@
+entity: Signal
+
+description: >
+  Represents a signal source or point of interest.
+
+owner: Navigation
+
+fields:
+
+  name:
+    type: string
+
+  category:
+    type: string
+
+  count:
+    type: integer
+
+  expires:
+    type: datetime
+
+relationships:
+
+  system:
+    type: System
+    cardinality: one
+
+events:
+
+  - FSSSignalDiscovered
+  - SAASignalsFound
+
+used_by:
+
+  - Navigation
+  - Laboratory

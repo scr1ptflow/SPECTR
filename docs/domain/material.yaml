@@ -1,0 +1,23 @@
+entity: Material
+
+owner: Engineering
+
+fields:
+
+  name:
+    type: string
+
+  category:
+    type: string
+
+  grade:
+    type: integer
+
+  quantity:
+    type: integer
+
+events:
+
+  - MaterialCollected
+
+  - MaterialDiscarded
